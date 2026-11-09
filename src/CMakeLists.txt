@@ -3,6 +3,7 @@ target_sources( ${PROJECT_NAME}
 	PRIVATE
 		${CMAKE_CURRENT_LIST_DIR}/qOBPA.cpp
 		${CMAKE_CURRENT_LIST_DIR}/qOBPADialog.cpp
+		${CMAKE_CURRENT_LIST_DIR}/qOBPALevel.cpp
 		${CMAKE_CURRENT_LIST_DIR}/qOBPAProcess.cpp
 )
 

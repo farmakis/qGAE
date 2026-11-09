@@ -19,6 +19,7 @@
 
 //local
 #include "qOBPADialog.h"
+#include "qOBPALevel.h"
 
 //qCC_plugins
 #include <ccMainAppInterface.h>
@@ -28,7 +29,9 @@
 
 //CCCoreLib
 #include <CloudSamplingTools.h>
+#include <DgmOctreeReferenceCloud.h>
 #include <GeometricalAnalysisTools.h>
+#include <Neighbourhood.h>
 
 //qCC_db
 #include <ccBackgroundTask.h>
@@ -50,7 +53,8 @@ using namespace PCP;
 
 int RES_FACTOR_NORMALS = 3; // resolution factor for normals computation 
 //! Default name for OBPA scalar fields
-static const char LEVEL_NODES_SF_NAME[] = "Node ID";
+static const char LEVEL_1_SF_NAME[] = "Level 1";
+static const char LEVEL_2_SF_NAME[] = "Level 2";
 
 
 bool qOBPAProcess::Compute(const qOBPADialog& dlg,
@@ -190,22 +194,27 @@ bool qOBPAProcess::Compute(const qOBPADialog& dlg,
             pc->getCCScalarField(r.sfIdx)->computeMinAndMax();
         }
         
-        // we create/activate Facet ID's label scalar field
-        int sfIdx = pc->getScalarFieldIndexByName(LEVEL_NODES_SF_NAME);
+        // we create/activate Level-1's label scalar field
+        int sfIdx = pc->getScalarFieldIndexByName(LEVEL_1_SF_NAME);
         if (sfIdx < 0)
         {
-            sfIdx = pc->addScalarField(LEVEL_NODES_SF_NAME);
+            sfIdx = pc->addScalarField(LEVEL_1_SF_NAME);
         }
         if (sfIdx < 0)
         {
-            app->dispToConsole(QObject::tr("[OBPA] Couldn't allocate a new scalar field for computing Facets! Try to free some memory ..."), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+            app->dispToConsole(QObject::tr("[OBPA] Couldn't allocate a new scalar field for computing higher level partition! Try to free some memory ..."), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
             break;
         }
         pc->setCurrentScalarField(sfIdx);
 
         app->addToDB(pc);
         app->refreshAll();
-        
+
+        // CREATE NAG object starting with VOXEL LEVEL
+        std::vector<Data> nag;
+        // Data voxelData(pc);
+        // nag.push_back(voxelData);
+
         // more parallel cut pursuit params
         int32_t  D      = 6; // 3 for XYZ + 3 for Normals (Nx, Ny, Nz)
 
@@ -248,19 +257,6 @@ bool qOBPAProcess::Compute(const qOBPADialog& dlg,
             }
         }
 
-        // we create/activate Facet ID's label scalar field
-        sfIdx = pc->getScalarFieldIndexByName(LEVEL_NODES_SF_NAME);
-        if (sfIdx < 0)
-        {
-            sfIdx = pc->addScalarField(LEVEL_NODES_SF_NAME);
-        }
-        if (sfIdx < 0)
-        {
-            app->dispToConsole(QObject::tr("[OBPA] Couldn't allocate a new scalar field for computing Facets! Try to free some memory ..."), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
-            break;
-        }
-        pc->setCurrentScalarField(sfIdx);
-
         // we try to label all CCs
         int                  rV = PCP::Partition::LabelCutPursuitComponents(pc,
                                                                             params,
@@ -273,7 +269,7 @@ bool qOBPAProcess::Compute(const qOBPADialog& dlg,
         // error handling
         if (rV < 0)
         {
-            app->dispToConsole(QObject::tr("[OBPA] Failed to compute components!"), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+            app->dispToConsole(QObject::tr("[OBPA] Failed to compute partition!"), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
             pc->deleteScalarField(sfIdx);
             return false;
         }
@@ -286,25 +282,41 @@ bool qOBPAProcess::Compute(const qOBPADialog& dlg,
         }
         sf->computeMinAndMax();
 
+        // ############################################################################
+        // ############################################################################
+        // ############################################################################
+        
         // Compute segment normals
+        requests.clear(); // 'requests' is a std::vector (not a pointer): reuse it for the segment-level features
+        const char* levelNames[3] = { "Nx (L1)", "Ny (L1)", "Nz (L1)" };
+
+        for (int k = 0; k < 3; ++k)
+        {
+            int idx = pc->getScalarFieldIndexByName(levelNames[k]);
+            if (idx < 0) idx = pc->addScalarField(levelNames[k]);
+            if (idx < 0) { /* error, memory */ break; }
+
+            GAT::MultiGeomCharacteristicRequest r;
+            r.c         = GAT::Normal;
+            r.subOption = k;
+            r.sf        = pc->getCCScalarField(idx).get();
+            r.sfIdx     = idx;
+            requests.push_back(r);
+        }
+
         for (int segment = 0; segment < rV; ++segment)
         {
+            ScalarType value = CCCoreLib::NAN_VALUE;
+
             // get segment points
             auto start  = componentsOffset[segment];
             auto end    = componentsOffset[segment + 1];
-            unsigned n  = end - start;
-
-            for (int i = start; i < end; ++i)
-            { 
-                auto point = pc->getPoint(componentsList[i]);
-                app->dispToConsole(QObject::tr("[OBPA] Getting point '%2': %3 s").arg(point->x).arg(cloudName).arg(time_ms / 1000.0, 0, 'f', 3),
-                    ccMainAppInterface::STD_CONSOLE_MESSAGE);
-            }
+            unsigned pointCount  = end - start;
             
             DgmOctree::NeighboursSet pointsInSegment;
             try
             {
-                pointsInSegment.resize(n);
+                pointsInSegment.resize(pointCount);
             }
             catch (const std::bad_alloc&)
             {
@@ -312,17 +324,61 @@ bool qOBPAProcess::Compute(const qOBPADialog& dlg,
             }
 
             DgmOctree::NeighboursSet::iterator it = pointsInSegment.begin();
-            for (unsigned i = 0; i < n; ++i, ++it)
+            for (unsigned i = 0; i < pointCount; ++i, ++it)
             {
                 DgmOctree::PointDescriptor pointInfo;
-                it->point = cell.points->getPointPersistentPtr(i);
-                it->pointIndex = cell.points->getPointGlobalIndex(i);
+                it->point = pc->getPoint(componentsList[start + i]);
+                it->pointIndex = componentsList[start + i];
             }
 
             //the Neighbourhood is shared by all the characteristics
             CCCoreLib::DgmOctreeReferenceCloud neighboursCloud(&pointsInSegment, pointCount);
-            CCCoreLib::Neighbourhood Z(*neighboursCloud);
+            CCCoreLib::Neighbourhood Z(&neighboursCloud);
+
+            const CCVector3* N = Z.getLSPlaneNormal();
+            for (const GAT::MultiGeomCharacteristicRequest& r : requests)
+	        {
+                value = CCCoreLib::NAN_VALUE;
+                if (N)
+                {
+                    if (r.subOption == 0)
+                    {
+                        value = N->x;
+                    }
+                    else if (r.subOption == 1)
+                    {
+                        value = N->y;
+                    }
+                    else if (r.subOption == 2)
+                    {
+                        value = N->z;
+                    }
+                }
+                for (unsigned i = 0; i < pointCount; ++i)
+                {
+                    r.sf->setValue(componentsList[start + i], value);
+                }
+            }
+            
         }
+
+        for (auto& r : requests) 
+        {
+            pc->getCCScalarField(r.sfIdx)->computeMinAndMax();
+        }
+
+        // we create/activate Level-2's label scalar field
+        sfIdx = pc->getScalarFieldIndexByName(LEVEL_2_SF_NAME);
+        if (sfIdx < 0)
+        {
+            sfIdx = pc->addScalarField(LEVEL_2_SF_NAME);
+        }
+        if (sfIdx < 0)
+        {
+            app->dispToConsole(QObject::tr("[OBPA] Couldn't allocate a new scalar field for computing higher level partition! Try to free some memory ..."), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+            break;
+        }
+        pc->setCurrentScalarField(sfIdx);
 
         //Upadate display
         cloud->setEnabled(false);
