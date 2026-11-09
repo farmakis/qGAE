@@ -1,0 +1,23 @@
+{
+	"type" : "Standard",
+	"core" : true,
+	"name" : "OBPA",
+	"icon" : ":/CC/plugin/qOBPA/images/qOBPA.png",
+	"description": "Graph Analysis Engine for Object-Based Point-cloud Analysis (OBPA).",
+	"authors" : [
+		{
+			"name" : "Ioannis Farmakis"
+		}
+	],
+	"maintainers" : [
+    {
+      "name": "Ioannis Farmakis"
+    }
+	],
+  "references": [
+    {
+      "text": "Documentation",
+      "url": "http://www.cloudcompare.org/doc/wiki/index.php?title=Facets_(plugin)"
+    }
+  ]
+}
