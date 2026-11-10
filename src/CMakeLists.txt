@@ -1,10 +1,11 @@
 
 target_sources( ${PROJECT_NAME}
 	PRIVATE
-		${CMAKE_CURRENT_LIST_DIR}/qOBPA.cpp
-		${CMAKE_CURRENT_LIST_DIR}/qOBPADialog.cpp
-		${CMAKE_CURRENT_LIST_DIR}/qOBPALevel.cpp
-		${CMAKE_CURRENT_LIST_DIR}/qOBPAProcess.cpp
+		${CMAKE_CURRENT_LIST_DIR}/qGAE.cpp
+		${CMAKE_CURRENT_LIST_DIR}/qGAEDialog.cpp
+		${CMAKE_CURRENT_LIST_DIR}/qGAEGraph.cpp
+		${CMAKE_CURRENT_LIST_DIR}/qGAELevel.cpp
+		${CMAKE_CURRENT_LIST_DIR}/qGAEProcess.cpp
 )
 
 target_include_directories( ${PROJECT_NAME}

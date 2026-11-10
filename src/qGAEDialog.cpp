@@ -1,6 +1,6 @@
 //##########################################################################
 //#                                                                        #
-//#                CLOUDCOMPARE PLUGIN: qOBPA                              #
+//#                CLOUDCOMPARE PLUGIN: qGAE                              #
 //#                                                                        #
 //#  This program is free software; you can redistribute it and/or modify  #
 //#  it under the terms of the GNU General Public License as published by  #
@@ -15,7 +15,7 @@
 //#                                                                        #
 //##########################################################################
 
-#include "qOBPADialog.h"
+#include "qGAEDialog.h"
 
 //CCPluginAPI
 #include <ccMainAppInterface.h>
@@ -24,9 +24,9 @@
 #include <QMainWindow>
 
 
-qOBPADialog::qOBPADialog( ccMainAppInterface* app )
+qGAEDialog::qGAEDialog( ccMainAppInterface* app )
 	: QDialog( app ? app->getMainWindow() : nullptr )
-	, Ui::OBPADialog()
+	, Ui::GAEDialog()
 	, m_app( app )
 {
 	setupUi( this );
@@ -34,29 +34,29 @@ qOBPADialog::qOBPADialog( ccMainAppInterface* app )
 	loadParamsFromPersistentSettings();
 }
 
-double qOBPADialog::getResolution() const
+double qGAEDialog::getResolution() const
 {
 	return doubleSpinBoxResolution->value();
 }
 
-double qOBPADialog::getMinPlanarity() const
+double qGAEDialog::getMinPlanarity() const
 {
 	return doubleSpinBoxMinPlanarity->value();
 }
 
-double qOBPADialog::getRegularization() const
+double qGAEDialog::getRegularization() const
 {
 	return doubleSpinBoxRegularization->value();
 }
 
-int qOBPADialog::getCutoff() const
+int qGAEDialog::getCutoff() const
 {
 	return spinBoxCutoff->value();
 }
 
-void qOBPADialog::loadParamsFromPersistentSettings()
+void qGAEDialog::loadParamsFromPersistentSettings()
 {
-	QSettings settings("qOBPA");
+	QSettings settings("qGAE");
 
 	//read parameters
 	double resolution = settings.value("Resolution", doubleSpinBoxResolution->value()).toDouble();
@@ -71,9 +71,9 @@ void qOBPADialog::loadParamsFromPersistentSettings()
 	spinBoxCutoff->setValue(cutoff);
 }
 
-void qOBPADialog::saveParamsToPersistentSettings()
+void qGAEDialog::saveParamsToPersistentSettings()
 {
-	QSettings settings("qOBPA");
+	QSettings settings("qGAE");
 	//save parameters
 	settings.setValue("Resolution", doubleSpinBoxResolution->value());
 	settings.setValue("MinPlanarity", doubleSpinBoxMinPlanarity->value());

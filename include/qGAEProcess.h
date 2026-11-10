@@ -1,6 +1,6 @@
 //##########################################################################
 //#                                                                        #
-//#                CLOUDCOMPARE PLUGIN: qOBPA                              #
+//#                CLOUDCOMPARE PLUGIN: qGAE                              #
 //#                                                                        #
 //#  This program is free software; you can redistribute it and/or modify  #
 //#  it under the terms of the GNU General Public License as published by  #
@@ -17,29 +17,29 @@
 
 #pragma once
 
-#include "ccStdPluginInterface.h"
+//Local
+#include "qGAEDialog.h"
 
-//! OBPA plugin
-/** Graph-based discontinuity surface segmentation plugin.
+//qCC
+#include "ccPointCloud.h"
+
+class ccMainAppInterface;
+
+//! GAE process
+/** See "Graph-Based Discontinuity Surface Isolation from 3D Point Clouds", 
+    Farmakis, I.; Dewez, T.; Dyson, C., 2027, 
+    ISPRS Journal of Photogrammetry and Remote Sensing"
 **/
-class qOBPA : public QObject, public ccStdPluginInterface
+class qGAEProcess
 {
-	Q_OBJECT
-	Q_INTERFACES( ccPluginInterface ccStdPluginInterface )
-
-	Q_PLUGIN_METADATA( IID "cccorp.cloudcompare.plugin.OBPA" FILE "../info.json" )
-
 public:
-	explicit qOBPA( QObject* parent = nullptr );
-	~qOBPA() override = default;
+	
+	static bool Compute(const qGAEDialog& dlg,
+						QString& errorMessage,
+						ccPointCloud*& outputCloud,
+						ccHObject*& outputGroup,
+						bool allowDialogs,
+						QWidget* parentWidget = nullptr,
+						ccMainAppInterface* app = nullptr);
 
-	// Inherited from ccStdPluginInterface
-	void onNewSelection( const ccHObject::Container& selectedEntities ) override;
-	QList<QAction*> getActions() override;
-
-private:
-	void doAction();
-
-	//! Default action
-	QAction* m_action;
 };

@@ -1,6 +1,6 @@
 //##########################################################################
 //#                                                                        #
-//#                CLOUDCOMPARE PLUGIN: qOBPA                              #
+//#                CLOUDCOMPARE PLUGIN: qGAE                              #
 //#                                                                        #
 //#  This program is free software; you can redistribute it and/or modify  #
 //#  it under the terms of the GNU General Public License as published by  #
@@ -15,21 +15,21 @@
 //#                                                                        #
 //##########################################################################
 
-#include "qOBPA.h"
+#include "qGAE.h"
 
-#include "qOBPADialog.h"
-#include "qOBPAProcess.h"
+#include "qGAEDialog.h"
+#include "qGAEProcess.h"
 
 #include <QMainWindow>
 
-qOBPA::qOBPA( QObject* parent )
+qGAE::qGAE( QObject* parent )
 	: QObject( parent )
-	, ccStdPluginInterface( ":/CC/plugin/qOBPA/info.json" )
+	, ccStdPluginInterface( ":/CC/plugin/qGAE/info.json" )
 	, m_action( nullptr )
 {
 }
 
-void qOBPA::onNewSelection( const ccHObject::Container& selectedEntities )
+void qGAE::onNewSelection( const ccHObject::Container& selectedEntities )
 {
 	if ( m_action == nullptr )
 	{
@@ -40,7 +40,7 @@ void qOBPA::onNewSelection( const ccHObject::Container& selectedEntities )
 	m_action->setEnabled( !selectedEntities.empty() );
 }
 
-QList<QAction*> qOBPA::getActions()
+QList<QAction*> qGAE::getActions()
 {
 	if ( !m_action )
 	{
@@ -48,13 +48,13 @@ QList<QAction*> qOBPA::getActions()
 		m_action->setToolTip( getDescription() );
 		m_action->setIcon( getIcon() );
 
-		connect( m_action, &QAction::triggered, this, &qOBPA::doAction );
+		connect( m_action, &QAction::triggered, this, &qGAE::doAction );
 	}
 
 	return { m_action };
 }
 
-void qOBPA::doAction()
+void qGAE::doAction()
 {
 	if ( m_app == nullptr )
 	{
@@ -62,7 +62,7 @@ void qOBPA::doAction()
 		return;
 	}
 
-	qOBPADialog dlg( m_app );
+	qGAEDialog dlg( m_app );
 	if ( !dlg.exec() )
 	{
 		return;
@@ -71,7 +71,7 @@ void qOBPA::doAction()
     QString errorMessage;
 	ccPointCloud* outputCloud = nullptr; //only necessary for the command line version in fact
 	ccHObject* outputGroup = nullptr; //only necessary for the command line version in fact
-    if (!qOBPAProcess::Compute(dlg, errorMessage, outputCloud, outputGroup, true, m_app->getMainWindow(), m_app))
+    if (!qGAEProcess::Compute(dlg, errorMessage, outputCloud, outputGroup, true, m_app->getMainWindow(), m_app))
 	{
 		if (!errorMessage.isEmpty())
 		{
@@ -79,7 +79,7 @@ void qOBPA::doAction()
 		}
 		else
 		{
-			m_app->dispToConsole("[OBPA] Completed!", ccMainAppInterface::STD_CONSOLE_MESSAGE);
+			m_app->dispToConsole("[GAE] Completed!", ccMainAppInterface::STD_CONSOLE_MESSAGE);
 		}	
 	}
 

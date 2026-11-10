@@ -1,6 +1,6 @@
 <RCC>
-  <qresource prefix="/CC/plugin/qOBPA">
-    <file>images/qOBPA.png</file>
+  <qresource prefix="/CC/plugin/qGAE">
+    <file>images/qGAE.png</file>
     <file>images/discontinuities.jpg</file>
     <file>info.json</file>
   </qresource>

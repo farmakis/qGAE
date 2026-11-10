@@ -1,6 +1,6 @@
 //##########################################################################
 //#                                                                        #
-//#                CLOUDCOMPARE PLUGIN: qOBPA                              #
+//#                CLOUDCOMPARE PLUGIN: qGAE                              #
 //#                                                                        #
 //#  This program is free software; you can redistribute it and/or modify  #
 //#  it under the terms of the GNU General Public License as published by  #
@@ -15,37 +15,31 @@
 //#                                                                        #
 //##########################################################################
 
-#include "qOBPALevel.h"
+#pragma once
 
+#include "ccStdPluginInterface.h"
 
-Data::Data(unsigned N, const QString& name)
-    : ccPointCloud(name)
+//! GAE plugin
+/** Graph Analysis Engine: Point cloud analysis as a multi-level graph.
+**/
+class qGAE : public QObject, public ccStdPluginInterface
 {
-    m_valid = reserve(N);
-}
+	Q_OBJECT
+	Q_INTERFACES( ccPluginInterface ccStdPluginInterface )
 
-Data::Data(const ccPointCloud& pc, const QString& name)
-    : ccPointCloud(name.isEmpty() ? pc.getName() : name)
-{
-    // appending to an empty cloud copies points and all associated fields
-    *this += const_cast<ccPointCloud*>(&pc);
-    m_valid = (size() == pc.size());
-}
+	Q_PLUGIN_METADATA( IID "cccorp.cloudcompare.plugin.GAE" FILE "../info.json" )
 
-int Data::addField(const QString& name)
-{
-    const std::string stdName = name.toStdString();
-    int idx = getScalarFieldIndexByName(stdName);
-    if (idx >= 0)
-    {
-        return idx;
-    }
+public:
+	explicit qGAE( QObject* parent = nullptr );
+	~qGAE() override = default;
 
-    // the scalar field is allocated with the currently reserved point count
-    return addScalarField(stdName);
-}
+	// Inherited from ccStdPluginInterface
+	void onNewSelection( const ccHObject::Container& selectedEntities ) override;
+	QList<QAction*> getActions() override;
 
-// bool Data::computeFeatures(GAT::MultiGeomCharacteristicRequestSet requests)
-// {
-//     std::string label = "Geometric characteristics computation";
-// }
+private:
+	void doAction();
+
+	//! Default action
+	QAction* m_action;
+};

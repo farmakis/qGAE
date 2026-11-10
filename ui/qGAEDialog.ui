@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>OBPADialog</class>
- <widget class="QDialog" name="OBPADialog">
+ <class>GAEDialog</class>
+ <widget class="QDialog" name="GAEDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -14,8 +14,8 @@
    <string>Discontinuity Surface Segmentation</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../qOBPA.qrc">
-    <normaloff>:/CC/plugin/qOBPA/images/qOBPA.png</normaloff>:/CC/plugin/qOBPA/images/qOBPA.png</iconset>
+   <iconset resource="../qGAE.qrc">
+    <normaloff>:/CC/plugin/qGAE/images/qGAE.png</normaloff>:/CC/plugin/qGAE/images/qGAE.png</iconset>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout" stretch="1,1,0">
    <item>
@@ -202,7 +202,7 @@ p, li { white-space: pre-wrap; }
             <string/>
            </property>
            <property name="pixmap">
-            <pixmap resource="../qOBPA.qrc">:/CC/plugin/qOBPA/images/discontinuities.jpg</pixmap>
+            <pixmap resource="../qGAE.qrc">:/CC/plugin/qGAE/images/discontinuities.jpg</pixmap>
            </property>
            <property name="scaledContents">
             <bool>true</bool>
@@ -227,13 +227,13 @@ p, li { white-space: pre-wrap; }
   </layout>
  </widget>
  <resources>
-  <include location="../qOBPA.qrc"/>
+  <include location="../qGAE.qrc"/>
  </resources>
  <connections>
   <connection>
    <sender>buttonBox</sender>
    <signal>rejected()</signal>
-   <receiver>OBPADialog</receiver>
+   <receiver>GAEDialog</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -249,7 +249,7 @@ p, li { white-space: pre-wrap; }
   <connection>
    <sender>buttonBox</sender>
    <signal>accepted()</signal>
-   <receiver>OBPADialog</receiver>
+   <receiver>GAEDialog</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">

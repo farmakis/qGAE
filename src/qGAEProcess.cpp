@@ -1,6 +1,6 @@
 //##########################################################################
 //#                                                                        #
-//#                CLOUDCOMPARE PLUGIN: qOBPA                              #
+//#                CLOUDCOMPARE PLUGIN: qGAE                              #
 //#                                                                        #
 //#  This program is free software; you can redistribute it and/or modify  #
 //#  it under the terms of the GNU General Public License as published by  #
@@ -15,11 +15,11 @@
 //#                                                                        #
 //##########################################################################
 
-#include "qOBPAProcess.h"
+#include "qGAEProcess.h"
 
 //local
-#include "qOBPADialog.h"
-#include "qOBPALevel.h"
+#include "qGAEDialog.h"
+#include "qGAELevel.h"
 
 //qCC_plugins
 #include <ccMainAppInterface.h>
@@ -52,12 +52,12 @@
 using namespace PCP;
 
 int RES_FACTOR_NORMALS = 3; // resolution factor for normals computation 
-//! Default name for OBPA scalar fields
+//! Default name for GAE scalar fields
 static const char LEVEL_1_SF_NAME[] = "Level 1";
 static const char LEVEL_2_SF_NAME[] = "Level 2";
 
 
-bool qOBPAProcess::Compute(const qOBPADialog& dlg,
+bool qGAEProcess::Compute(const qGAEDialog& dlg,
                                 QString& errorMessage,
                                 ccPointCloud*& outputCloud,
                                 ccHObject*& outputGroup,
@@ -121,7 +121,7 @@ bool qOBPAProcess::Compute(const qOBPADialog& dlg,
             theOctree = cloud->computeOctree(&pOctreeDlg);
             if (!theOctree)
             {
-                app->dispToConsole(QObject::tr("[OBPA] Couldn't compute octree for cloud '%1'!").arg(cloud->getName()), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+                app->dispToConsole(QObject::tr("[GAE] Couldn't compute octree for cloud '%1'!").arg(cloud->getName()), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
                 break;
             }
         }
@@ -133,7 +133,7 @@ bool qOBPAProcess::Compute(const qOBPADialog& dlg,
                                                                                 &pDlg);
         if (!subsampled)
         {
-            app->dispToConsole(QObject::tr("[OBPA] Failed to subsample cloud '%1'!").arg(cloud->getName()), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+            app->dispToConsole(QObject::tr("[GAE] Failed to subsample cloud '%1'!").arg(cloud->getName()), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
             break;
         }
 
@@ -142,7 +142,7 @@ bool qOBPAProcess::Compute(const qOBPADialog& dlg,
         subsampled = nullptr;
         if (!pc)
         {
-            app->dispToConsole(QObject::tr("[OBPA] Not enough memory to subsample cloud '%1'!").arg(cloud->getName()), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+            app->dispToConsole(QObject::tr("[GAE] Not enough memory to subsample cloud '%1'!").arg(cloud->getName()), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
             break;
         }
 
@@ -152,7 +152,7 @@ bool qOBPAProcess::Compute(const qOBPADialog& dlg,
             theSubOctree = pc->computeOctree(&pOctreeDlg);
             if (!theSubOctree)
             {
-                app->dispToConsole(QObject::tr("[OBPA] Couldn't compute octree for cloud '%1'!").arg(pc->getName()), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+                app->dispToConsole(QObject::tr("[GAE] Couldn't compute octree for cloud '%1'!").arg(pc->getName()), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
                 break;
             }
         }
@@ -202,7 +202,7 @@ bool qOBPAProcess::Compute(const qOBPADialog& dlg,
         }
         if (sfIdx < 0)
         {
-            app->dispToConsole(QObject::tr("[OBPA] Couldn't allocate a new scalar field for computing higher level partition! Try to free some memory ..."), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+            app->dispToConsole(QObject::tr("[GAE] Couldn't allocate a new scalar field for computing higher level partition! Try to free some memory ..."), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
             break;
         }
         pc->setCurrentScalarField(sfIdx);
@@ -269,7 +269,7 @@ bool qOBPAProcess::Compute(const qOBPADialog& dlg,
         // error handling
         if (rV < 0)
         {
-            app->dispToConsole(QObject::tr("[OBPA] Failed to compute partition!"), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+            app->dispToConsole(QObject::tr("[GAE] Failed to compute partition!"), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
             pc->deleteScalarField(sfIdx);
             return false;
         }
@@ -375,7 +375,7 @@ bool qOBPAProcess::Compute(const qOBPADialog& dlg,
         }
         if (sfIdx < 0)
         {
-            app->dispToConsole(QObject::tr("[OBPA] Couldn't allocate a new scalar field for computing higher level partition! Try to free some memory ..."), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+            app->dispToConsole(QObject::tr("[GAE] Couldn't allocate a new scalar field for computing higher level partition! Try to free some memory ..."), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
             break;
         }
         pc->setCurrentScalarField(sfIdx);
@@ -395,7 +395,7 @@ bool qOBPAProcess::Compute(const qOBPADialog& dlg,
         //we display block volume computation timing only if no error occurred!
         if (app)
         {
-            app->dispToConsole(QObject::tr("[OBPA] Detected %1 facets in cloud '%2': %3 s").arg(rV).arg(cloudName).arg(time_ms / 1000.0, 0, 'f', 3),
+            app->dispToConsole(QObject::tr("[GAE] Detected %1 facets in cloud '%2': %3 s").arg(rV).arg(cloudName).arg(time_ms / 1000.0, 0, 'f', 3),
                 ccMainAppInterface::STD_CONSOLE_MESSAGE);
         }
     }
