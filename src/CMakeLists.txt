@@ -5,6 +5,7 @@ target_sources( ${PROJECT_NAME}
 		${CMAKE_CURRENT_LIST_DIR}/qGAEDialog.cpp
 		${CMAKE_CURRENT_LIST_DIR}/qGAEGraph.cpp
 		${CMAKE_CURRENT_LIST_DIR}/qGAELevel.cpp
+		${CMAKE_CURRENT_LIST_DIR}/qGAEPartition.cpp
 		${CMAKE_CURRENT_LIST_DIR}/qGAEProcess.cpp
 )
 

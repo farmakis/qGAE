@@ -1,11 +1,11 @@
-option( PLUGIN_STANDARD_QOBPA "Check to install qOBPA plugin" OFF )
+option( PLUGIN_STANDARD_QGAE "Check to install qGAE plugin" OFF )
 
-if( PLUGIN_STANDARD_QOBPA )
+if( PLUGIN_STANDARD_QGAE )
 	if( NOT OPTION_USE_SHAPE_LIB )
-		message( FATAL_ERROR "ShapeLib is required to compile the qOBPA plugin (enable OPTION_USE_SHAPE_LIB)" )
+		message( FATAL_ERROR "ShapeLib is required to compile the qGAE plugin (enable OPTION_USE_SHAPE_LIB)" )
 	endif()
 
-	project( QOBPA_PLUGIN )
+	project( QGAE_PLUGIN )
 
 	AddPlugin( NAME ${PROJECT_NAME} )
 	target_compile_definitions( ${PROJECT_NAME} PRIVATE QT_NO_KEYWORDS )

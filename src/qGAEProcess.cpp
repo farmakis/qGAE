@@ -20,6 +20,7 @@
 //local
 #include "qGAEDialog.h"
 #include "qGAELevel.h"
+#include "qGAEGraph.h"
 
 //qCC_plugins
 #include <ccMainAppInterface.h>
@@ -146,13 +147,23 @@ bool qGAEProcess::Compute(const qGAEDialog& dlg,
             break;
         }
 
-        ccOctree::Shared theSubOctree = pc->getOctree();
+        Data* d1 = new Data(*pc);
+        delete pc;
+        pc = nullptr;
+        if (!d1->isValid())
+        {
+            delete d1;
+            app->dispToConsole(QObject::tr("[GAE] Not enough memory to create the graph for cloud '%1'!").arg(cloud->getName()), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+            break;
+        }
+
+        ccOctree::Shared theSubOctree = d1->getOctree();
         if (!theSubOctree)
         {
-            theSubOctree = pc->computeOctree(&pOctreeDlg);
+            theSubOctree = d1->computeOctree(&pOctreeDlg);
             if (!theSubOctree)
             {
-                app->dispToConsole(QObject::tr("[GAE] Couldn't compute octree for cloud '%1'!").arg(pc->getName()), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+                app->dispToConsole(QObject::tr("[GAE] Couldn't compute octree for cloud '%1'!").arg(d1->getName()), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
                 break;
             }
         }
@@ -163,14 +174,14 @@ bool qGAEProcess::Compute(const qGAEDialog& dlg,
 
         for (int k = 0; k < 3; ++k)
         {
-            int idx = pc->getScalarFieldIndexByName(names[k]);
-            if (idx < 0) idx = pc->addScalarField(names[k]);
+            int idx = d1->getScalarFieldIndexByName(names[k]);
+            if (idx < 0) idx = d1->addScalarField(names[k]);
             if (idx < 0) { /* error, memory */ break; }
 
             GAT::MultiGeomCharacteristicRequest r;
             r.c         = GAT::Normal;
             r.subOption = k;
-            r.sf        = pc->getCCScalarField(idx).get();
+            r.sf        = d1->getCCScalarField(idx).get();
             r.sfIdx     = idx;
             requests.push_back(r);
         }
@@ -178,7 +189,7 @@ bool qGAEProcess::Compute(const qGAEDialog& dlg,
         PointCoordinateType radius = static_cast<PointCoordinateType>(resolution * RES_FACTOR_NORMALS);
 
         GAT::ErrorCode err = GAT::ComputeCharacteristics(requests,
-                                                         pc,
+                                                         d1,
                                                          radius,
                                                          nullptr,
                                                          &pDlg,
@@ -191,213 +202,149 @@ bool qGAEProcess::Compute(const qGAEDialog& dlg,
         }
         for (auto& r : requests) 
         {
-            pc->getCCScalarField(r.sfIdx)->computeMinAndMax();
+            d1->getCCScalarField(r.sfIdx)->computeMinAndMax();
         }
-        
-        // we create/activate Level-1's label scalar field
-        int sfIdx = pc->getScalarFieldIndexByName(LEVEL_1_SF_NAME);
-        if (sfIdx < 0)
-        {
-            sfIdx = pc->addScalarField(LEVEL_1_SF_NAME);
-        }
-        if (sfIdx < 0)
-        {
-            app->dispToConsole(QObject::tr("[GAE] Couldn't allocate a new scalar field for computing higher level partition! Try to free some memory ..."), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
-            break;
-        }
-        pc->setCurrentScalarField(sfIdx);
 
-        app->addToDB(pc);
+        app->addToDB(d1);
         app->refreshAll();
+        
+        // // we create/activate Level-1's label scalar field
+        // int sfIdx = pc->getScalarFieldIndexByName(LEVEL_1_SF_NAME);
+        // if (sfIdx < 0)
+        // {
+        //     sfIdx = pc->addScalarField(LEVEL_1_SF_NAME);
+        // }
+        // if (sfIdx < 0)
+        // {
+        //     app->dispToConsole(QObject::tr("[GAE] Couldn't allocate a new scalar field for computing higher level partition! Try to free some memory ..."), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+        //     break;
+        // }
+        // pc->setCurrentScalarField(sfIdx);
 
-        // CREATE NAG object starting with VOXEL LEVEL
-        std::vector<Data> nag;
-        // Data voxelData(pc);
-        // nag.push_back(voxelData);
-
-        // more parallel cut pursuit params
-        int32_t  D      = 6; // 3 for XYZ + 3 for Normals (Nx, Ny, Nz)
-
-        params.D = D;
-		params.Y.assign(static_cast<size_t>(pc->size()) * static_cast<size_t>(D), 0.0f);
-		std::vector<float>&  Y = params.Y;
-        std::vector<int32_t> components;
-        std::vector<int32_t> componentsList;
-        std::vector<int32_t> componentsOffset;
-
-        CCVector3d posOffset(0, 0, 0);
-        for (unsigned i = 0; i < pc->size(); ++i)
-        {
-            posOffset += pc->getPoint(i)->toDouble();
-        }
-        posOffset /= static_cast<double>(pc->size());
-
-
-        for (unsigned i = 0; i < pc->size(); ++i)
-        {
-            const CCVector3d P = pc->getPoint(i)->toDouble();
-
-            Y[i * D + 0] = static_cast<float>(P.x - posOffset.x);
-            Y[i * D + 1] = static_cast<float>(P.y - posOffset.y);
-            Y[i * D + 2] = static_cast<float>(P.z - posOffset.z);
-
-            for (size_t k = 0; k < 3; ++k)
-            {
-                int idx                     = pc->getScalarFieldIndexByName(names[k]);
-                ccScalarField::Shared sf    = pc->getCCScalarField(idx);
-                float                 value = static_cast<float>(sf->getValue(i));
-
-                // Sanitize NaN/Inf, force it to 0.0
-                if (!std::isfinite(value))
-                {
-                    value = 0.0f;
-                }
-                // Scalar fields start at feature index 3
-                Y[i * D + 3 + k] =value;
-            }
-        }
-
-        // we try to label all CCs
-        int                  rV = PCP::Partition::LabelCutPursuitComponents(pc,
-                                                                            params,
-                                                                            components,
-                                                                            &componentsList,
-                                                                            &componentsOffset,
-                                                                            &pDlg,
-                                                                            theSubOctree.data());
-
-        // error handling
-        if (rV < 0)
-        {
-            app->dispToConsole(QObject::tr("[GAE] Failed to compute partition!"), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
-            pc->deleteScalarField(sfIdx);
-            return false;
-        }
-
-        // Assign component index to each point
-        ccScalarField::Shared sf = pc->getCCScalarField(sfIdx);
-        for (unsigned i = 0; i < pc->size(); ++i)
-        {
-            sf->setValue(i, static_cast<ScalarType>(components[i]));
-        }
-        sf->computeMinAndMax();
+        // // Assign component index to each point
+        // ccScalarField::Shared sf = pc->getCCScalarField(sfIdx);
+        // for (unsigned i = 0; i < pc->size(); ++i)
+        // {
+        //     sf->setValue(i, static_cast<ScalarType>(components[i]));
+        // }
+        // sf->computeMinAndMax();
 
         // ############################################################################
         // ############################################################################
         // ############################################################################
         
-        // Compute segment normals
-        requests.clear(); // 'requests' is a std::vector (not a pointer): reuse it for the segment-level features
-        const char* levelNames[3] = { "Nx (L1)", "Ny (L1)", "Nz (L1)" };
+        // // Compute segment normals
+        // requests.clear(); // 'requests' is a std::vector (not a pointer): reuse it for the segment-level features
+        // const char* levelNames[3] = { "Nx (L1)", "Ny (L1)", "Nz (L1)" };
 
-        for (int k = 0; k < 3; ++k)
-        {
-            int idx = pc->getScalarFieldIndexByName(levelNames[k]);
-            if (idx < 0) idx = pc->addScalarField(levelNames[k]);
-            if (idx < 0) { /* error, memory */ break; }
+        // for (int k = 0; k < 3; ++k)
+        // {
+        //     int idx = d1->getScalarFieldIndexByName(levelNames[k]);
+        //     if (idx < 0) idx = pc->addScalarField(levelNames[k]);
+        //     if (idx < 0) { /* error, memory */ break; }
 
-            GAT::MultiGeomCharacteristicRequest r;
-            r.c         = GAT::Normal;
-            r.subOption = k;
-            r.sf        = pc->getCCScalarField(idx).get();
-            r.sfIdx     = idx;
-            requests.push_back(r);
-        }
+        //     GAT::MultiGeomCharacteristicRequest r;
+        //     r.c         = GAT::Normal;
+        //     r.subOption = k;
+        //     r.sf        = pc->getCCScalarField(idx).get();
+        //     r.sfIdx     = idx;
+        //     requests.push_back(r);
+        // }
 
-        for (int segment = 0; segment < rV; ++segment)
-        {
-            ScalarType value = CCCoreLib::NAN_VALUE;
+        // for (int segment = 0; segment < rV; ++segment)
+        // {
+        //     ScalarType value = CCCoreLib::NAN_VALUE;
 
-            // get segment points
-            auto start  = componentsOffset[segment];
-            auto end    = componentsOffset[segment + 1];
-            unsigned pointCount  = end - start;
+        //     // get segment points
+        //     auto start  = componentsOffset[segment];
+        //     auto end    = componentsOffset[segment + 1];
+        //     unsigned pointCount  = end - start;
             
-            DgmOctree::NeighboursSet pointsInSegment;
-            try
-            {
-                pointsInSegment.resize(pointCount);
-            }
-            catch (const std::bad_alloc&)
-            {
-                return false;
-            }
+        //     DgmOctree::NeighboursSet pointsInSegment;
+        //     try
+        //     {
+        //         pointsInSegment.resize(pointCount);
+        //     }
+        //     catch (const std::bad_alloc&)
+        //     {
+        //         return false;
+        //     }
 
-            DgmOctree::NeighboursSet::iterator it = pointsInSegment.begin();
-            for (unsigned i = 0; i < pointCount; ++i, ++it)
-            {
-                DgmOctree::PointDescriptor pointInfo;
-                it->point = pc->getPoint(componentsList[start + i]);
-                it->pointIndex = componentsList[start + i];
-            }
+        //     DgmOctree::NeighboursSet::iterator it = pointsInSegment.begin();
+        //     for (unsigned i = 0; i < pointCount; ++i, ++it)
+        //     {
+        //         DgmOctree::PointDescriptor pointInfo;
+        //         it->point = pc->getPoint(componentsList[start + i]);
+        //         it->pointIndex = componentsList[start + i];
+        //     }
 
-            //the Neighbourhood is shared by all the characteristics
-            CCCoreLib::DgmOctreeReferenceCloud neighboursCloud(&pointsInSegment, pointCount);
-            CCCoreLib::Neighbourhood Z(&neighboursCloud);
+        //     //the Neighbourhood is shared by all the characteristics
+        //     CCCoreLib::DgmOctreeReferenceCloud neighboursCloud(&pointsInSegment, pointCount);
+        //     CCCoreLib::Neighbourhood Z(&neighboursCloud);
 
-            const CCVector3* N = Z.getLSPlaneNormal();
-            for (const GAT::MultiGeomCharacteristicRequest& r : requests)
-	        {
-                value = CCCoreLib::NAN_VALUE;
-                if (N)
-                {
-                    if (r.subOption == 0)
-                    {
-                        value = N->x;
-                    }
-                    else if (r.subOption == 1)
-                    {
-                        value = N->y;
-                    }
-                    else if (r.subOption == 2)
-                    {
-                        value = N->z;
-                    }
-                }
-                for (unsigned i = 0; i < pointCount; ++i)
-                {
-                    r.sf->setValue(componentsList[start + i], value);
-                }
-            }
+        //     const CCVector3* N = Z.getLSPlaneNormal();
+        //     for (const GAT::MultiGeomCharacteristicRequest& r : requests)
+	    //     {
+        //         value = CCCoreLib::NAN_VALUE;
+        //         if (N)
+        //         {
+        //             if (r.subOption == 0)
+        //             {
+        //                 value = N->x;
+        //             }
+        //             else if (r.subOption == 1)
+        //             {
+        //                 value = N->y;
+        //             }
+        //             else if (r.subOption == 2)
+        //             {
+        //                 value = N->z;
+        //             }
+        //         }
+        //         for (unsigned i = 0; i < pointCount; ++i)
+        //         {
+        //             r.sf->setValue(componentsList[start + i], value);
+        //         }
+        //     }
             
-        }
+        // }
 
-        for (auto& r : requests) 
-        {
-            pc->getCCScalarField(r.sfIdx)->computeMinAndMax();
-        }
+        // for (auto& r : requests) 
+        // {
+        //     pc->getCCScalarField(r.sfIdx)->computeMinAndMax();
+        // }
 
-        // we create/activate Level-2's label scalar field
-        sfIdx = pc->getScalarFieldIndexByName(LEVEL_2_SF_NAME);
-        if (sfIdx < 0)
-        {
-            sfIdx = pc->addScalarField(LEVEL_2_SF_NAME);
-        }
-        if (sfIdx < 0)
-        {
-            app->dispToConsole(QObject::tr("[GAE] Couldn't allocate a new scalar field for computing higher level partition! Try to free some memory ..."), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
-            break;
-        }
-        pc->setCurrentScalarField(sfIdx);
+        // // we create/activate Level-2's label scalar field
+        // sfIdx = pc->getScalarFieldIndexByName(LEVEL_2_SF_NAME);
+        // if (sfIdx < 0)
+        // {
+        //     sfIdx = pc->addScalarField(LEVEL_2_SF_NAME);
+        // }
+        // if (sfIdx < 0)
+        // {
+        //     app->dispToConsole(QObject::tr("[GAE] Couldn't allocate a new scalar field for computing higher level partition! Try to free some memory ..."), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+        //     break;
+        // }
+        // pc->setCurrentScalarField(sfIdx);
 
-        //Upadate display
-        cloud->setEnabled(false);
+        // //Upadate display
+        // cloud->setEnabled(false);
 
-        pc->setName(QObject::tr("%1 (res.:%2 - reg:%2 - cutoff:%5)").arg(cloud->getName()).arg(resolution).arg(params.regularization).arg(params.cutoff));
-        pc->setCurrentDisplayedScalarField(sfIdx);
-        pc->showSF(true);
-        pc->prepareDisplayForRefresh();
+        // pc->setName(QObject::tr("%1 (res.:%2 - reg:%2 - cutoff:%5)").arg(cloud->getName()).arg(resolution).arg(params.regularization).arg(params.cutoff));
+        // pc->setCurrentDisplayedScalarField(sfIdx);
+        // pc->showSF(true);
+        // pc->prepareDisplayForRefresh();
 
-        app->addToDB(pc);
-        app->refreshAll();
+        // app->addToDB(pc);
+        // app->refreshAll();
 
-        qint64 time_ms = timer.elapsed();
-        //we display block volume computation timing only if no error occurred!
-        if (app)
-        {
-            app->dispToConsole(QObject::tr("[GAE] Detected %1 facets in cloud '%2': %3 s").arg(rV).arg(cloudName).arg(time_ms / 1000.0, 0, 'f', 3),
-                ccMainAppInterface::STD_CONSOLE_MESSAGE);
-        }
+        // qint64 time_ms = timer.elapsed();
+        // //we display block volume computation timing only if no error occurred!
+        // if (app)
+        // {
+        //     app->dispToConsole(QObject::tr("[GAE] Detected %1 facets in cloud '%2': %3 s").arg(rV).arg(cloudName).arg(time_ms / 1000.0, 0, 'f', 3),
+        //         ccMainAppInterface::STD_CONSOLE_MESSAGE);
+        // }
     }
     
     return true;

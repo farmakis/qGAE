@@ -16,3 +16,13 @@
 //##########################################################################
 
 #include "qGAEGraph.h"
+
+//system
+#include <utility>
+#include <vector>
+
+
+NAG::NAG(std::vector<Data> dataList)
+    : std::vector<Data>(std::move(dataList))
+{
+}
