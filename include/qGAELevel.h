@@ -20,9 +20,10 @@
 // qCC_db
 #include <ccPointCloud.h>
 #include <ccScalarField.h>
-
+// system
 #include <cstdint>
 #include <vector>
+
 // CCCoreLib
 #include "GeometricalAnalysisTools.h"
 
@@ -60,7 +61,7 @@ class Data : public ccPointCloud
         //! Returns the number of nodes in the graph
         int32_t numNodes() const { return static_cast<int32_t>(size()); }
         //! Returns the number of edges in the graph
-        int32_t numEdges() const { return edges.size() / 2; }
+        int32_t numEdges() const { return static_cast<int32_t>(edges.size() / 2); }
         //! Returns the number of scalar fields stored in this cloud
         unsigned numFeatures() const { return getNumberOfScalarFields(); }
         //! Returns a pointer to the scalar field that hold the feature by name

@@ -28,7 +28,27 @@
 #include <Partition.h>
 #include <CutPursuit.h>
 
+//Qt
+#include <QMessageBox>
+
 class Data;
+class ccPointCloud;
+
+//! Paritions a point cloud into voxels
+class VoxelPartition
+{
+    public:
+        //! Constructor
+        explicit VoxelPartition(double voxelSize, int connectivity = 26);
+
+        //! Run the process
+        //! \return a new Data object owned by the caller (nullptr on failure)
+        Data* Process(ccPointCloud* cloud, QString& errorMessage, CCCoreLib::GenericProgressCallback* progressCb=nullptr);
+
+    protected:
+        double m_voxelSize;
+        int m_connectivity = 26; //!< connectivity of the voxel graph (6, 18 or 26)
+};
 
 //! Partitions a graph contained in a `Data` object using cut-pursuit.
 class CutPursuitPartition
@@ -38,7 +58,8 @@ class CutPursuitPartition
         explicit CutPursuitPartition(PCP::Parameters params);
 
         //! Run the process
-        Data Process(Data& data, CCCoreLib::GenericProgressCallback* progressCb=nullptr);
+        //! \return a new Data object (reduced graph) owned by the caller (nullptr on failure)
+        Data* Process(Data& data, QString& errorMessage, CCCoreLib::GenericProgressCallback* progressCb=nullptr);
 
     protected:
         float               m_regularization;                   //!< regularization strength

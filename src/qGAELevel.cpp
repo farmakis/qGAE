@@ -40,14 +40,6 @@ Data::Data(const ccPointCloud& pc, const QString& name)
     nodeSize.reserve(pc.size());
     superIndex.reserve(pc.size());
     clusterList.reserve(pc.size());
-
-    // // collect the scalar fields copied from the source cloud
-    // const unsigned sfCount = getNumberOfScalarFields();
-    // features.reserve(sfCount);
-    // for (unsigned k = 0; k < sfCount; ++k)
-    // {
-    //     features.push_back(getCCScalarField(k));
-    // }
 }
 
 int Data::addField(const QString& name)

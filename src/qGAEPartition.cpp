@@ -15,13 +15,94 @@
 //#                                                                        #
 //##########################################################################
 
+// local
 #include "qGAEPartition.h"
 #include "qGAELevel.h"
 
+// system
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <omp.h>
 
+// qPCP
+#include "OMPNumThreads.h"
+
+//CCCoreLib
+#include <CloudSamplingTools.h>
+#include <GenericProgressCallback.h>
+#include <ReferenceCloud.h>
+
+
+VoxelPartition::VoxelPartition(double voxelSize, int connectivity)
+    : m_voxelSize(voxelSize)
+    , m_connectivity(connectivity)
+{
+}
+
+Data* VoxelPartition::Process(ccPointCloud* cloud, QString& errorMessage, CCCoreLib::GenericProgressCallback* progressCb)
+{
+    ccOctree::Shared theOctree = cloud->getOctree();
+    if (!theOctree)
+    {
+        theOctree = cloud->computeOctree(progressCb);
+        if (!theOctree)
+        {
+            errorMessage = QObject::tr("[GAE] Couldn't compute octree for cloud '%1'!").arg(cloud->getName());
+            return nullptr;
+        }
+    }
+
+    auto subsampled = CCCoreLib::CloudSamplingTools::resampleCloudSpatially(cloud,
+                                                                            static_cast<PointCoordinateType>(m_voxelSize),
+                                                                            CCCoreLib::CloudSamplingTools::SFModulationParams(false),
+                                                                            theOctree.data(),
+                                                                            progressCb);
+
+    if (!subsampled)
+    {
+        errorMessage = QObject::tr("[GAE] Failed to subsample cloud '%1'!").arg(cloud->getName());
+        return nullptr;
+    }
+
+    ccPointCloud* pc = cloud->partialClone(subsampled);
+    delete subsampled;
+    subsampled = nullptr;
+    if (!pc)
+    {
+        errorMessage = QObject::tr("[GAE] Not enough memory to clone cloud '%1'!").arg(cloud->getName());
+        return nullptr;
+    }
+
+    Data* data = new Data(*pc);
+    delete pc;
+    pc = nullptr;
+    if (!data->isValid())
+    {
+        errorMessage = QObject::tr("[GAE] Failed to create level data from cloud '%1'!").arg(cloud->getName());
+        return nullptr;
+    }
+
+    ccOctree::Shared dataOctree = data->getOctree();
+    if (!dataOctree)
+    {
+        dataOctree = data->computeOctree(progressCb);
+        if (!dataOctree)
+        {
+            errorMessage = QObject::tr("[GAE] Couldn't compute octree for level data '%1'!").arg(cloud->getName());
+            return nullptr;
+        }
+    }
+
+    // instantiate the graph and compute edges
+	PCP::Graph G(static_cast<int32_t>(data->size()), data, dataOctree.data());
+	G.computeEdges(m_connectivity, m_voxelSize, progressCb);
+    data->edges = G.getEdgeList();
+    data->edgeAttr = G.getEdgeWeights();
+    data->nodeSize.resize(data->size(), 1.0f); // initialize node sizes to 1.0
+    
+    return data;
+}
 
 CutPursuitPartition::CutPursuitPartition(PCP::Parameters params)
     : m_regularization(params.regularization)
@@ -30,7 +111,7 @@ CutPursuitPartition::CutPursuitPartition(PCP::Parameters params)
 {
 }
 
-Data CutPursuitPartition::Process(Data& data, CCCoreLib::GenericProgressCallback* progressCb)
+Data* CutPursuitPartition::Process(Data& data, QString& errorMessage, CCCoreLib::GenericProgressCallback* progressCb)
 {
     // more parallel cut pursuit params
     m_D = 3 + static_cast<int32_t>(data.numFeatures());
@@ -72,7 +153,7 @@ Data CutPursuitPartition::Process(Data& data, CCCoreLib::GenericProgressCallback
 	int32_t* Comp = (int32_t*)calloc(data.numNodes(), sizeof(int32_t));
 	if (!Comp)
 	{
-		return Data(0); // not enough memory
+		return nullptr; // not enough memory
 	}
 
     // Get the mean XYZ as the offset to apply to point cooordinates
@@ -160,36 +241,54 @@ Data CutPursuitPartition::Process(Data& data, CCCoreLib::GenericProgressCallback
 	const int32_t* compOffset;
 	const int32_t* compList;
 	auto           rV = cp->get_components(&compAssign, &compOffset, &compList);
-
-    // // error handling
-    // if (rV < 0)
-    // {
-    //     app->dispToConsole(QObject::tr("[GAE] Failed to compute partition!"), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
-    //     pc->deleteScalarField(sfIdx);
-    //     return false;
-    // }
+    
+    // error handling
+    if (rV <= 0)
+    {
+        errorMessage = QObject::tr("[GAE] Failed to compute partition!");
+        delete cp;
+        return nullptr;
+    }
 
     const int32_t* reducedEdgeList;
     const float*   reducedEdgeWeights;
     auto           rE = cp->get_reduced_graph(&reducedEdgeList, &reducedEdgeWeights);
 
     // Create the new Data object
-    Data d2(static_cast<unsigned>(rV));
+    Data* d2 = new Data(static_cast<unsigned>(rV));
 
     // Copy results
     data.superIndex.assign(compAssign, compAssign + data.numNodes());
     data.clusterList.assign(compList, compList + data.numNodes());
-    d2.subPointer.assign(compOffset, compOffset + rV + 1);
-    d2.nodeSize.resize(rV);
+    d2->subPointer.assign(compOffset, compOffset + rV + 1);
+
+    d2->nodeSize.resize(rV);
     for (int32_t rv = 0; rv < rV; rv++)
     {
-        d2.nodeSize[rv] = static_cast<float>(compOffset[rv + 1] - compOffset[rv]);
+        const int32_t start = compOffset[rv];
+        const int32_t end   = compOffset[rv + 1];
+
+        d2->nodeSize[rv] = static_cast<float>(end - start);
+
+        CCVector3d pos(0, 0, 0);
+        for (int32_t i = start; i < end; ++i)
+        {
+            const CCVector3* P = data.getPoint(static_cast<unsigned>(compList[i]));
+            pos.x += P->x;
+            pos.y += P->y;
+            pos.z += P->z;
+        }
+        const double n = std::max<int32_t>(end - start, 1);
+        d2->addPoint(CCVector3(static_cast<PointCoordinateType>(pos.x / n),
+                               static_cast<PointCoordinateType>(pos.y / n),
+                               static_cast<PointCoordinateType>(pos.z / n)));
     }
-    d2.edges.assign(reducedEdgeList, reducedEdgeList + rE * 2);
-    d2.edgeAttr.resize(rE);
+
+    d2->edges.assign(reducedEdgeList, reducedEdgeList + rE * 2);
+    d2->edgeAttr.resize(rE);
     for (int32_t e = 0; e < rE; ++e)
     {
-        d2.edgeAttr[e] = reducedEdgeWeights[e] / m_regularization;
+        d2->edgeAttr[e] = reducedEdgeWeights[e] / m_regularization;
     }
 
 	delete cp;
