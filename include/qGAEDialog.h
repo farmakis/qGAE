@@ -34,7 +34,9 @@ public:
 	//! Default constructor
 	explicit qGAEDialog( ccMainAppInterface* app );
 
-	double getResolution() const;
+	int getResolution() const;
+	//! Voxel graph connectivity (6, 14 or 26)
+	int getConnectivity() const;
 	//! Per-level parameter lists (comma-separated in the dialog)
 	std::vector<double> getRegularization() const;
 	std::vector<double> getSpatialWeight() const;

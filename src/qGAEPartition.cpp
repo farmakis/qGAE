@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
+#include <string>
 #include <omp.h>
 
 // qPCP
@@ -34,8 +35,8 @@
 #include <ReferenceCloud.h>
 
 
-VoxelPartition::VoxelPartition(double voxelSize, int connectivity)
-    : m_voxelSize(voxelSize)
+VoxelPartition::VoxelPartition(int octreeLevel, int connectivity)
+    : m_octreeLevel(octreeLevel)
     , m_connectivity(connectivity)
 {
 }
@@ -53,34 +54,42 @@ Data* VoxelPartition::Process(ccPointCloud* cloud, QString& errorMessage, CCCore
         }
     }
 
-    auto subsampled = CCCoreLib::CloudSamplingTools::resampleCloudSpatially(cloud,
-                                                                            static_cast<PointCoordinateType>(m_voxelSize),
-                                                                            CCCoreLib::CloudSamplingTools::SFModulationParams(false),
-                                                                            theOctree.data(),
-                                                                            progressCb);
+    // get cell centers at the given octree level
+    const unsigned cellsNumber = theOctree->getCellNumber(m_octreeLevel);
+    std::vector<CCVector3> centers(cellsNumber);
+    CCCoreLib::DgmOctree::cellCodesContainer codes;
+    theOctree->getCellCodes(m_octreeLevel, codes, true);
+    void* additionalParameters[]
+    { 
+        static_cast<void*>(&centers), 
+        static_cast<void*>(&codes)
+    };
 
-    if (!subsampled)
+    if (theOctree->executeFunctionForAllCellsAtLevel(	m_octreeLevel,
+														&ComputeVoxelsAtLevel,
+														additionalParameters,
+														true,
+														progressCb,
+														("Building voxel graph at octree level " + std::to_string(m_octreeLevel)).c_str()) == 0)
+	{
+		//something went wrong
+		errorMessage = "ProcessFailed";
+        return nullptr;
+	}
+
+    // create the Data object to hold the voxel cloud and its graph
+    Data* data = new Data(cellsNumber);
+    if (!data->reserve(cellsNumber))
     {
-        errorMessage = QObject::tr("[GAE] Failed to sample voxel cloud '%1'!").arg(cloud->getName());
+        errorMessage = QObject::tr("[GAE] Not enough memory to create voxel cloud for '%1'!").arg(cloud->getName());
+        delete data;
         return nullptr;
     }
-
-    ccPointCloud* pc = cloud->partialClone(subsampled);
-    delete subsampled;
-    subsampled = nullptr;
-    if (!pc)
+    data->subPointer.resize(cellsNumber);
+    for (unsigned i = 0; i < cellsNumber; ++i)
     {
-        errorMessage = QObject::tr("[GAE] Not enough memory to clone voxel cloud '%1'!").arg(cloud->getName());
-        return nullptr;
-    }
-
-    Data* data = new Data(*pc);
-    delete pc;
-    pc = nullptr;
-    if (!data->isValid())
-    {
-        errorMessage = QObject::tr("[GAE] Failed to create Level-0 data from voxel cloud '%1'!").arg(cloud->getName());
-        return nullptr;
+        data->addPoint(centers[i]);
+        data->subPointer[i] = static_cast<int32_t>(i);
     }
 
     ccOctree::Shared dataOctree = data->getOctree();
@@ -90,18 +99,42 @@ Data* VoxelPartition::Process(ccPointCloud* cloud, QString& errorMessage, CCCore
         if (!dataOctree)
         {
             errorMessage = QObject::tr("[GAE] Couldn't compute octree for Level-0 data '%1'!").arg(cloud->getName());
+            delete data;
             return nullptr;
         }
     }
 
     // instantiate the graph and compute edges
 	PCP::Graph G(static_cast<int32_t>(data->size()), data, dataOctree.data());
-	G.computeEdges(m_connectivity, m_voxelSize, progressCb);
+    PointCoordinateType voxelSize = theOctree->getCellSize(m_octreeLevel);
+	G.computeEdges(m_connectivity, static_cast<float>(voxelSize), progressCb);
     data->edges = G.getEdgeList();
     data->edgeAttr = G.getEdgeWeights();
     data->nodeSize.resize(data->size(), 1.0f); // initialize node sizes to 1.0
     
     return data;
+}
+
+bool VoxelPartition::ComputeVoxelsAtLevel(  const CCCoreLib::DgmOctree::octreeCell& cell,
+                                            void** additionalParameters,
+                                            CCCoreLib::NormalizedProgress* nProgress)
+{
+    //parameters
+    auto* centers = static_cast<std::vector<CCVector3>*>(additionalParameters[0]);
+    auto* codes   = static_cast<const CCCoreLib::DgmOctree::cellCodesContainer*>(additionalParameters[1]);
+
+    // get the cell's center coordinates and add it as point to the voxel cloud
+    Tuple3i cellPos;
+    CCVector3 center;
+    cell.parentOctree->getCellPos(cell.truncatedCode, cell.level, cellPos, true);
+    cell.parentOctree->computeCellCenter(cellPos, cell.level, center);
+
+    // get the cell's index in the ordered list of cell codes
+    const auto it = std::lower_bound(codes->begin(), codes->end(), cell.truncatedCode);
+    const size_t cellIdx = static_cast<size_t>(it - codes->begin());
+
+    (*centers)[cellIdx] = center;
+    return true;
 }
 
 CutPursuitPartition::CutPursuitPartition(PCP::Parameters params)

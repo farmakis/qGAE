@@ -34,9 +34,14 @@ qGAEDialog::qGAEDialog( ccMainAppInterface* app )
 	loadParamsFromPersistentSettings();
 }
 
-double qGAEDialog::getResolution() const
+int qGAEDialog::getResolution() const
 {
-	return doubleSpinBoxResolution->value();
+	return intSpinBoxResolution->value();
+}
+
+int qGAEDialog::getConnectivity() const
+{
+	return comboBoxConnectivity->currentText().toInt();
 }
 
 // parses a comma-separated list; returns an empty vector if any item is invalid
@@ -114,13 +119,13 @@ void qGAEDialog::loadParamsFromPersistentSettings()
 	QSettings settings("qGAE");
 
 	//read parameters
-	double resolution = settings.value("Resolution", doubleSpinBoxResolution->value()).toDouble();
+	int resolution = settings.value("Resolution", intSpinBoxResolution->value()).toInt();
 	QString regularization = settings.value("RegularizationList", lineEditRegularization->text()).toString();
 	QString spatialWeight  = settings.value("SpatialWeightList", lineEditSpatialWeight->text()).toString();
 	QString cutoff         = settings.value("CutoffList", lineEditCutoff->text()).toString();
 
 	//apply parameters
-	doubleSpinBoxResolution->setValue(resolution);;
+	intSpinBoxResolution->setValue(static_cast<int>(resolution));
 	lineEditRegularization->setText(regularization);
 	lineEditSpatialWeight->setText(spatialWeight);
 	lineEditCutoff->setText(cutoff);
@@ -130,7 +135,7 @@ void qGAEDialog::saveParamsToPersistentSettings()
 {
 	QSettings settings("qGAE");
 	//save parameters
-	settings.setValue("Resolution", doubleSpinBoxResolution->value());
+	settings.setValue("Resolution", intSpinBoxResolution->value());
 	settings.setValue("RegularizationList", lineEditRegularization->text());
 	settings.setValue("SpatialWeightList", lineEditSpatialWeight->text());
 	settings.setValue("CutoffList", lineEditCutoff->text());

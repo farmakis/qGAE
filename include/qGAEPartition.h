@@ -22,6 +22,7 @@
 #include <vector>
 
 //CCCoreLib
+#include <DgmOctree.h>
 #include <GenericProgressCallback.h>
 
 //qPCP
@@ -39,15 +40,24 @@ class VoxelPartition
 {
     public:
         //! Constructor
-        explicit VoxelPartition(double voxelSize, int connectivity = 26);
+        explicit VoxelPartition(int octreeLevel, int connectivity = 26);
 
         //! Run the process
         //! \return a new Data object owned by the caller (nullptr on failure)
         Data* Process(ccPointCloud* cloud, QString& errorMessage, CCCoreLib::GenericProgressCallback* progressCb=nullptr);
 
     protected:
-        double m_voxelSize;
+        int m_octreeLevel = 0; //!< octree level used to define the voxels
         int m_connectivity = 26; //!< connectivity of the voxel graph (6, 18 or 26)
+
+        //! Assignes points to voxels and establishes neighbours at a given octree level
+		/**	\param cell structure describing the cell on which processing is applied
+			\param additionalParameters see method description
+			\param nProgress optional (normalized) progress notification (per-point)
+		**/
+        static bool ComputeVoxelsAtLevel(   const CCCoreLib::DgmOctree::octreeCell& cell,
+                                            void** additionalParameters,
+                                            CCCoreLib::NormalizedProgress* nProgress = nullptr);
 };
 
 //! Partitions a graph contained in a `Data` object using cut-pursuit.

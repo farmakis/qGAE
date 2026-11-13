@@ -89,7 +89,6 @@ bool qGAEProcess::Compute(const qGAEDialog& dlg,
     }
 
     // get the parameters from the dialog
-    double resolution = dlg.getResolution();
     bool useRGB = false;
 
     // per-level parameter lists (validated to be of the same length)
@@ -103,8 +102,8 @@ bool qGAEProcess::Compute(const qGAEDialog& dlg,
 
     // some parallel cut pursuit params (Level-1 values; Level-2 values are set later)
 	PCP::Parameters params;
-    params.knn            = 26;
-    params.knnRadius      = resolution;
+    params.knn            = dlg.getConnectivity();
+    params.knnRadius      = dlg.getResolution();
     params.regularization = static_cast<float>(regularizationList[0]);
     params.spatialWeight  = static_cast<float>(spatialWeightList[0]);
     params.cutoff         = cutoffList[0];
@@ -169,7 +168,9 @@ bool qGAEProcess::Compute(const qGAEDialog& dlg,
             requests.push_back(r);
         }
 
-        PointCoordinateType radius = static_cast<PointCoordinateType>(resolution * RES_FACTOR_NORMALS);
+        // TEMPORARILY: The knnRadius stored the octree level
+        PointCoordinateType voxelSize = theOctree->getCellSize(params.knnRadius);
+        PointCoordinateType radius = static_cast<PointCoordinateType>(voxelSize * RES_FACTOR_NORMALS);
 
         GAT::ErrorCode err = GAT::ComputeCharacteristics(requests,
                                                          d0,
@@ -338,13 +339,13 @@ bool qGAEProcess::Compute(const qGAEDialog& dlg,
         //Upadate display
         cloud->setEnabled(false);
 
-        d0->setName(QObject::tr("%1 (res.:%2 - reg:%3 - cutoff:%4)").arg(cloud->getName()).arg(resolution).arg(regularizationList[0]).arg(cutoffList[0]));
+        d0->setName(QObject::tr("%1 (res.:%2 - reg:%3 - cutoff:%4)").arg(cloud->getName()).arg(voxelSize).arg(regularizationList[0]).arg(cutoffList[0]));
         d0->showSF(true);
         d0->prepareDisplayForRefresh();
 
         app->addToDB(d0);
-        app->addToDB(d1);
-        app->addToDB(d2);
+        // app->addToDB(d1);
+        // app->addToDB(d2);
         app->refreshAll();
 
         qint64 time_ms = timer.elapsed();

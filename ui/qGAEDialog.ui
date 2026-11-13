@@ -44,28 +44,67 @@ p, li { white-space: pre-wrap; }
            <item>
             <widget class="QLabel" name="label_resolution">
              <property name="text">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt; font-weight:600; color:#1f497d;&quot;&gt;Resolution (m)&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt; font-weight:600; color:#1f497d;&quot;&gt;Octree Level&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QDoubleSpinBox" name="doubleSpinBoxResolution">
-             <property name="decimals">
-              <number>3</number>
-             </property>
+            <widget class="QSpinBox" name="intSpinBoxResolution">
              <property name="minimum">
-              <double>0.001000000000000</double>
+              <number>1</number>
              </property>
              <property name="singleStep">
-              <double>0.010000000000000</double>
+              <number>1</number>
              </property>
              <property name="value">
-              <double>0.050000000000000</double>
+              <number>8</number>
              </property>
             </widget>
            </item>
            <item>
             <spacer name="verticalSpacer_1">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_connectivity">
+             <property name="text">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt; font-weight:600; color:#1f497d;&quot;&gt;Connectivity&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QComboBox" name="comboBoxConnectivity">
+             <property name="currentIndex">
+              <number>2</number>
+             </property>
+             <item>
+              <property name="text">
+               <string>6</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>14</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>26</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item>
+            <spacer name="verticalSpacer_connectivity">
              <property name="orientation">
               <enum>Qt::Vertical</enum>
              </property>
