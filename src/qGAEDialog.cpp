@@ -39,19 +39,74 @@ double qGAEDialog::getResolution() const
 	return doubleSpinBoxResolution->value();
 }
 
-double qGAEDialog::getMinPlanarity() const
+// parses a comma-separated list; returns an empty vector if any item is invalid
+static std::vector<double> ParseDoubleList(const QString& text)
 {
-	return doubleSpinBoxMinPlanarity->value();
+	std::vector<double> values;
+	const QStringList   items = text.split(',', Qt::SkipEmptyParts);
+	for (const QString& item : items)
+	{
+		bool         ok = false;
+		const double v  = item.trimmed().toDouble(&ok);
+		if (!ok)
+		{
+			return {};
+		}
+		values.push_back(v);
+	}
+	return values;
 }
 
-double qGAEDialog::getRegularization() const
+std::vector<double> qGAEDialog::getRegularization() const
 {
-	return doubleSpinBoxRegularization->value();
+	return ParseDoubleList(lineEditRegularization->text());
 }
 
-int qGAEDialog::getCutoff() const
+std::vector<double> qGAEDialog::getSpatialWeight() const
 {
-	return spinBoxCutoff->value();
+	return ParseDoubleList(lineEditSpatialWeight->text());
+}
+
+std::vector<int> qGAEDialog::getCutoff() const
+{
+	std::vector<int> values;
+	for (double v : ParseDoubleList(lineEditCutoff->text()))
+	{
+		values.push_back(static_cast<int>(v));
+	}
+	return values;
+}
+
+bool qGAEDialog::validateLists(QString& errorMessage) const
+{
+	const std::vector<double> reg = getRegularization();
+	const std::vector<double> sw = getSpatialWeight();
+	const std::vector<int>    cut = getCutoff();
+
+	if (reg.empty() || sw.empty() || cut.empty())
+	{
+		errorMessage = tr("Regularization, spatial weight and cutoff must be non-empty comma-separated lists of numbers");
+		return false;
+	}
+	if (reg.size() != sw.size() || reg.size() != cut.size())
+	{
+		errorMessage = tr("Regularization, spatial weight and cutoff lists must have the same length");
+		return false;
+	}
+	for (double v : reg)
+	{
+		if (v < 0.0) { errorMessage = tr("Regularization values must be >= 0"); return false; }
+	}
+	for (double v : sw )
+	{
+		if (v <= 0.0) { errorMessage = tr("Spatial weight values must be > 0"); return false; }
+		if (v > 1.0) { errorMessage = tr("Spatial weight values must be <= 1"); return false; }
+	}
+	for (int v : cut)
+	{
+		if (v < 1) { errorMessage = tr("Cutoff values must be a > 0"); return false; }
+	}
+	return true;
 }
 
 void qGAEDialog::loadParamsFromPersistentSettings()
@@ -60,15 +115,15 @@ void qGAEDialog::loadParamsFromPersistentSettings()
 
 	//read parameters
 	double resolution = settings.value("Resolution", doubleSpinBoxResolution->value()).toDouble();
-	double minPlanarity = settings.value("MinPlanarity", doubleSpinBoxMinPlanarity->value()).toDouble();
-	double regularization = settings.value("Regularization", doubleSpinBoxRegularization->value()).toDouble();
-	int    cutoff = settings.value("Cutoff", spinBoxCutoff->value()).toInt();
+	QString regularization = settings.value("RegularizationList", lineEditRegularization->text()).toString();
+	QString spatialWeight  = settings.value("SpatialWeightList", lineEditSpatialWeight->text()).toString();
+	QString cutoff         = settings.value("CutoffList", lineEditCutoff->text()).toString();
 
 	//apply parameters
-	doubleSpinBoxResolution->setValue(resolution);
-	doubleSpinBoxMinPlanarity->setValue(minPlanarity);
-	doubleSpinBoxRegularization->setValue(regularization);
-	spinBoxCutoff->setValue(cutoff);
+	doubleSpinBoxResolution->setValue(resolution);;
+	lineEditRegularization->setText(regularization);
+	lineEditSpatialWeight->setText(spatialWeight);
+	lineEditCutoff->setText(cutoff);
 }
 
 void qGAEDialog::saveParamsToPersistentSettings()
@@ -76,7 +131,7 @@ void qGAEDialog::saveParamsToPersistentSettings()
 	QSettings settings("qGAE");
 	//save parameters
 	settings.setValue("Resolution", doubleSpinBoxResolution->value());
-	settings.setValue("MinPlanarity", doubleSpinBoxMinPlanarity->value());
-	settings.setValue("Regularization", doubleSpinBoxRegularization->value());
-	settings.setValue("Cutoff", spinBoxCutoff->value());
+	settings.setValue("RegularizationList", lineEditRegularization->text());
+	settings.setValue("SpatialWeightList", lineEditSpatialWeight->text());
+	settings.setValue("CutoffList", lineEditCutoff->text());
 }

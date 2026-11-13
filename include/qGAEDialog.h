@@ -21,6 +21,7 @@
 
 //Qt
 #include <QSettings>
+#include <vector>
 
 class ccMainAppInterface;
 
@@ -34,9 +35,13 @@ public:
 	explicit qGAEDialog( ccMainAppInterface* app );
 
 	double getResolution() const;
-	double getMinPlanarity() const;
-	double getRegularization() const;
-	int    getCutoff() const;
+	//! Per-level parameter lists (comma-separated in the dialog)
+	std::vector<double> getRegularization() const;
+	std::vector<double> getSpatialWeight() const;
+	std::vector<int>    getCutoff() const;
+
+	//! Checks that the three lists are valid and of the same length (returns the error otherwise)
+	bool validateLists(QString& error) const;
 
 	void loadParamsFromPersistentSettings();
 	void saveParamsToPersistentSettings();

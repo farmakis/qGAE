@@ -90,16 +90,24 @@ bool qGAEProcess::Compute(const qGAEDialog& dlg,
 
     // get the parameters from the dialog
     double resolution = dlg.getResolution();
-    double minPlanarity = dlg.getMinPlanarity();
     bool useRGB = false;
 
-    // some parallel cut pursuit params
+    // per-level parameter lists (validated to be of the same length)
+    if (!dlg.validateLists(errorMessage))
+    {
+        return false;
+    }
+    const std::vector<double> regularizationList = dlg.getRegularization();
+    const std::vector<double> spatialWeightList = dlg.getSpatialWeight();
+    const std::vector<int>    cutoffList = dlg.getCutoff();
+
+    // some parallel cut pursuit params (Level-1 values; Level-2 values are set later)
 	PCP::Parameters params;
     params.knn            = 26;
     params.knnRadius      = resolution;
-    params.regularization = dlg.getRegularization();
-    params.spatialWeight  = 0.00001f;
-    params.cutoff         = dlg.getCutoff();
+    params.regularization = static_cast<float>(regularizationList[0]);
+    params.spatialWeight  = static_cast<float>(spatialWeightList[0]);
+    params.cutoff         = cutoffList[0];
 
     ccProgressDialog pDlg(true, parentWidget);
     pDlg.setAutoClose(false);
@@ -311,7 +319,9 @@ bool qGAEProcess::Compute(const qGAEDialog& dlg,
 
         //Segment one more level up to create a second level of segments (Level-2)
         // this will be coniditioned by if (dlg.partitionMethod == CutPursuit) when we support multiple partition methods
-        params.cutoff         = dlg.getCutoff() * 2; // decrease cutoff for the next level
+        params.regularization = static_cast<float>(regularizationList[1]);
+        params.spatialWeight  = static_cast<float>(spatialWeightList[1]);
+        params.cutoff         = cutoffList[1];
         
         CutPursuitPartition partition2(params);
         Data* d2 = partition2.Process(*d1, errorMessage, &pDlg);
@@ -328,7 +338,7 @@ bool qGAEProcess::Compute(const qGAEDialog& dlg,
         //Upadate display
         cloud->setEnabled(false);
 
-        d0->setName(QObject::tr("%1 (res.:%2 - reg:%2 - cutoff:%5)").arg(cloud->getName()).arg(resolution).arg(params.regularization).arg(params.cutoff));
+        d0->setName(QObject::tr("%1 (res.:%2 - reg:%3 - cutoff:%4)").arg(cloud->getName()).arg(resolution).arg(regularizationList[0]).arg(cutoffList[0]));
         d0->showSF(true);
         d0->prepareDisplayForRefresh();
 

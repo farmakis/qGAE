@@ -1,7 +1,7 @@
 <RCC>
   <qresource prefix="/CC/plugin/qGAE">
     <file>images/qGAE.png</file>
-    <file>images/discontinuities.jpg</file>
+    <file>images/hierarchical-partition.jpg</file>
     <file>info.json</file>
   </qresource>
 </RCC>
