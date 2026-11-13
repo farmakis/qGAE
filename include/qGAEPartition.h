@@ -76,7 +76,7 @@ class CutPursuitPartition
         int                 m_kmppIterNum           = 3;        //!< number of k-means++ iterations
         int                 m_verbose               = 1000;     //!< verbosity level
         bool                m_balanceParallelSplit  = false;    //!< balance the parallel split
-        bool                m_computeTime           = true;     //!< compute and report timings
+        bool                m_computeTime           = false;    //!< compute and report timings
         bool                m_computeObj            = false;    //!< compute the objective value
         bool                m_computeDif            = false;    //!< compute the relative difference
         int                 m_maxNumThreads         = -1;       //!< maximum number of threads (-1: automatic)

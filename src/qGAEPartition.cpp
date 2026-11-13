@@ -130,25 +130,6 @@ Data* CutPursuitPartition::Process(Data& data, QString& errorMessage, CCCoreLib:
 		m_maxNumThreads = omp_get_max_threads();
 	}
 
-	// monitoring arrays
-	float* Obj = nullptr;
-	if (m_computeObj)
-	{
-		Obj = (float*)malloc(sizeof(float) * (m_iterations + 1));
-	}
-
-	double* Time = nullptr;
-	if (m_computeTime)
-	{
-		Time = (double*)malloc(sizeof(double) * (m_iterations + 1));
-	}
-
-	float* Dif = nullptr;
-	if (m_computeDif)
-	{
-		Dif = (float*)malloc(sizeof(float) * m_iterations);
-	}
-
 	// Allocate Comp array using malloc because cut pursuit uses C-style memory tracking
 	int32_t* Comp = (int32_t*)calloc(data.numNodes(), sizeof(int32_t));
 	if (!Comp)
@@ -224,7 +205,6 @@ Data* CutPursuitPartition::Process(Data& data, QString& errorMessage, CCCoreLib:
 	cp->set_split_param(maxSplitSize, m_K, m_splitIterNum, m_splitDampRatio, m_kmppInitNum, m_kmppIterNum);
 	cp->set_min_comp_weight(static_cast<float>(m_cutoff));
 	cp->set_parallel_param(m_maxNumThreads, m_balanceParallelSplit);
-	cp->set_monitoring_arrays(Obj, Time, Dif);
 	cp->set_components(0, Comp);;
 
 	if (progressCb)
