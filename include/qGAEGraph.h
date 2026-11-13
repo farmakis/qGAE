@@ -21,11 +21,14 @@
 
 //! Nested Acyclic Graph structure. In practise a list of Data objects of graphs
 //! with super indices to map from lower to higher levels.
-class NAG : public std::vector<Data>
+class NAG : public std::vector<Data*>
 {
     public:
         NAG() = default;
-        explicit NAG(std::vector<Data> dataList);
+        explicit NAG(std::vector<Data*> dataList);
 
-        size_t numLevels() const { return size(); }
+        //! Returns the super index mapping from level `low` to level `high`
+        std::vector<int> getSuperIndex(int high, int low = 0);
+
+        bool addLevel(Data* data);
 };

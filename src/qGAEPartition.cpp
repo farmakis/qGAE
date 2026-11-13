@@ -61,7 +61,7 @@ Data* VoxelPartition::Process(ccPointCloud* cloud, QString& errorMessage, CCCore
 
     if (!subsampled)
     {
-        errorMessage = QObject::tr("[GAE] Failed to subsample cloud '%1'!").arg(cloud->getName());
+        errorMessage = QObject::tr("[GAE] Failed to sample voxel cloud '%1'!").arg(cloud->getName());
         return nullptr;
     }
 
@@ -70,7 +70,7 @@ Data* VoxelPartition::Process(ccPointCloud* cloud, QString& errorMessage, CCCore
     subsampled = nullptr;
     if (!pc)
     {
-        errorMessage = QObject::tr("[GAE] Not enough memory to clone cloud '%1'!").arg(cloud->getName());
+        errorMessage = QObject::tr("[GAE] Not enough memory to clone voxel cloud '%1'!").arg(cloud->getName());
         return nullptr;
     }
 
@@ -79,7 +79,7 @@ Data* VoxelPartition::Process(ccPointCloud* cloud, QString& errorMessage, CCCore
     pc = nullptr;
     if (!data->isValid())
     {
-        errorMessage = QObject::tr("[GAE] Failed to create level data from cloud '%1'!").arg(cloud->getName());
+        errorMessage = QObject::tr("[GAE] Failed to create Level-0 data from voxel cloud '%1'!").arg(cloud->getName());
         return nullptr;
     }
 
@@ -89,7 +89,7 @@ Data* VoxelPartition::Process(ccPointCloud* cloud, QString& errorMessage, CCCore
         dataOctree = data->computeOctree(progressCb);
         if (!dataOctree)
         {
-            errorMessage = QObject::tr("[GAE] Couldn't compute octree for level data '%1'!").arg(cloud->getName());
+            errorMessage = QObject::tr("[GAE] Couldn't compute octree for Level-0 data '%1'!").arg(cloud->getName());
             return nullptr;
         }
     }

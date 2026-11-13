@@ -130,11 +130,16 @@ bool qGAEProcess::Compute(const qGAEDialog& dlg,
             }
         }
 
+        NAG nag;
         VoxelPartition voxelizer(params.knnRadius, params.knn);
-        Data* d1 = voxelizer.Process(cloud, errorMessage, &pDlg);
-        if (!d1)
+        Data* d0 = voxelizer.Process(cloud, errorMessage, &pDlg);
+        if (!d0)
         {
-            errorMessage = "Failed to build the voxel graph";
+            return false;
+        }
+        if(!nag.addLevel(d0))
+        {
+            errorMessage = "Failed to add level to NAG (SF memory allocation issue)";
             return false;
         }
 
@@ -144,14 +149,14 @@ bool qGAEProcess::Compute(const qGAEDialog& dlg,
 
         for (int k = 0; k < 3; ++k)
         {
-            int idx = d1->getScalarFieldIndexByName(names[k]);
-            if (idx < 0) idx = d1->addScalarField(names[k]);
+            int idx = d0->getScalarFieldIndexByName(names[k]);
+            if (idx < 0) idx = d0->addScalarField(names[k]);
             if (idx < 0) { /* error, memory */ break; }
 
             GAT::MultiGeomCharacteristicRequest r;
             r.c         = GAT::Normal;
             r.subOption = k;
-            r.sf        = d1->getCCScalarField(idx).get();
+            r.sf        = d0->getCCScalarField(idx).get();
             r.sfIdx     = idx;
             requests.push_back(r);
         }
@@ -159,52 +164,34 @@ bool qGAEProcess::Compute(const qGAEDialog& dlg,
         PointCoordinateType radius = static_cast<PointCoordinateType>(resolution * RES_FACTOR_NORMALS);
 
         GAT::ErrorCode err = GAT::ComputeCharacteristics(requests,
-                                                         d1,
+                                                         d0,
                                                          radius,
                                                          nullptr,
                                                          &pDlg,
-                                                         d1->getOctree().data());
-
+                                                         d0->getOctree().data());
         if (err != GAT::NoError) 
         { 
-            delete d1;
+            delete d0;
             errorMessage = "Failed to compute feature space";
             return false;
         }
         for (auto& r : requests) 
         {
-            d1->getCCScalarField(r.sfIdx)->computeMinAndMax();
+            d0->getCCScalarField(r.sfIdx)->computeMinAndMax();
         }
 
         // this will be coniditioned by if (dlg.partitionMethod == CutPursuit) when we support multiple partition methods
         CutPursuitPartition partition(params);
-        Data* d2 = partition.Process(*d1, errorMessage, &pDlg);
-        if (!d2)
+        Data* d1 = partition.Process(*d0, errorMessage, &pDlg);
+        if (!d1)
         {
-            errorMessage = "Failed to compute partition";
             return false;
         }
-        
-        // we create/activate Level-1's label scalar field
-        int sfIdx = d1->getScalarFieldIndexByName(LEVEL_1_SF_NAME);
-        if (sfIdx < 0)
+        if(!nag.addLevel(d1))
         {
-            sfIdx = d1->addScalarField(LEVEL_1_SF_NAME);
+            errorMessage = "Failed to add level to NAG (SF memory allocation issue)";
+            return false;
         }
-        if (sfIdx < 0)
-        {
-            app->dispToConsole(QObject::tr("[GAE] Couldn't allocate a new scalar field for computing higher level partition! Try to free some memory ..."), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
-            break;
-        }
-        d1->setCurrentScalarField(sfIdx);
-
-        // Assign component index to each point
-        ccScalarField::Shared sf = d1->getCCScalarField(sfIdx);
-        for (unsigned i = 0; i < d1->size(); ++i)
-        {
-            sf->setValue(i, static_cast<ScalarType>(d1->superIndex[i]));
-        }
-        sf->computeMinAndMax();
 
         // ############################################################################
         // ############################################################################
@@ -216,25 +203,25 @@ bool qGAEProcess::Compute(const qGAEDialog& dlg,
 
         for (int k = 0; k < 3; ++k)
         {
-            int idx = d2->getScalarFieldIndexByName(levelNames[k]);
-            if (idx < 0) idx = d2->addScalarField(levelNames[k]);
+            int idx = d1->getScalarFieldIndexByName(levelNames[k]);
+            if (idx < 0) idx = d1->addScalarField(levelNames[k]);
             if (idx < 0) { /* error, memory */ break; }
 
             GAT::MultiGeomCharacteristicRequest r;
             r.c         = GAT::Normal;
             r.subOption = k;
-            r.sf        = d2->getCCScalarField(idx).get();
+            r.sf        = d1->getCCScalarField(idx).get();
             r.sfIdx     = idx;
             requests.push_back(r);
         }
 
-        for (int rv = 0; rv < d2->numNodes(); ++rv)
+        for (int rv = 0; rv < d1->numNodes(); ++rv)
         {
             ScalarType value = CCCoreLib::NAN_VALUE;
 
             // get segment points
-            auto start  = d2->subPointer[rv];
-            auto end    = d2->subPointer[rv + 1];
+            auto start  = d1->subPointer[rv];
+            auto end    = d1->subPointer[rv + 1];
             unsigned pointCount  = end - start;
             
             DgmOctree::NeighboursSet pointsInSegment;
@@ -251,8 +238,8 @@ bool qGAEProcess::Compute(const qGAEDialog& dlg,
             for (unsigned i = 0; i < pointCount; ++i, ++it)
             {
                 DgmOctree::PointDescriptor pointInfo;
-                it->point = d1->getPoint(d1->clusterList[start + i]);
-                it->pointIndex = d1->clusterList[start + i];
+                it->point = d0->getPoint(d0->clusterList[start + i]);
+                it->pointIndex = d0->clusterList[start + i];
             }
 
             //the Neighbourhood is shared by all the characteristics
@@ -283,40 +270,40 @@ bool qGAEProcess::Compute(const qGAEDialog& dlg,
         }
 
         // create the higher level scalar fields in lower to host feature values of segments
-        for (unsigned sfIndx = 0; sfIndx < d2->numFeatures(); ++sfIndx)
+        for (unsigned sfIndx = 0; sfIndx < d1->numFeatures(); ++sfIndx)
         {
-            auto sfName = d2->getScalarFieldName(sfIndx);
-            int sfIdxHigh = d2->getScalarFieldIndexByName(sfName);
-            ccScalarField::Shared sfHigh = d2->getCCScalarField(sfIdxHigh);
+            auto sfName = d1->getScalarFieldName(sfIndx);
+            int sfIdxHigh = d1->getScalarFieldIndexByName(sfName);
+            ccScalarField::Shared sfHigh = d1->getCCScalarField(sfIdxHigh);
 
             // we create/activate Level-2's label scalar field in the target level
-            int sfIdxLow = d1->getScalarFieldIndexByName(sfName);
+            int sfIdxLow = d0->getScalarFieldIndexByName(sfName);
             if (sfIdxLow < 0)
             {
-                sfIdxLow = d1->addScalarField(sfName);
+                sfIdxLow = d0->addScalarField(sfName);
             }
             if (sfIdxLow < 0)
             {
                 app->dispToConsole(QObject::tr("[GAE] Couldn't allocate a new scalar field for computing higher level partition! Try to free some memory ..."), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
                 break;
             }
-            d1->setCurrentScalarField(sfIdxLow);
+            d0->setCurrentScalarField(sfIdxLow);
 
-            ccScalarField::Shared sfLow = d1->getCCScalarField(sfIdxLow);
+            ccScalarField::Shared sfLow = d0->getCCScalarField(sfIdxLow);
 
             // map the higher segment values to the corresponding lower points
-            for (int rv = 0; rv < d2->numNodes(); ++rv)
+            for (int rv = 0; rv < d1->numNodes(); ++rv)
             {
                 ScalarType value = sfHigh->getValue(rv);
 
                 // get segment points
-                auto start  = d2->subPointer[rv];
-                auto end    = d2->subPointer[rv + 1];
+                auto start  = d1->subPointer[rv];
+                auto end    = d1->subPointer[rv + 1];
                 unsigned pointCount  = end - start;
 
                 for (unsigned i = 0; i < pointCount; ++i)
                 {
-                    sfLow->setValue(d1->clusterList[start + i], value);
+                    sfLow->setValue(d0->clusterList[start + i], value);
                 }
             }
             sfLow->computeMinAndMax();
@@ -324,70 +311,39 @@ bool qGAEProcess::Compute(const qGAEDialog& dlg,
 
         //Segment one more level up to create a second level of segments (Level-2)
         // this will be coniditioned by if (dlg.partitionMethod == CutPursuit) when we support multiple partition methods
-        // CutPursuitPartition partition(params);
-        Data* d3 = partition.Process(*d2, errorMessage, &pDlg);
-        if (!d3)
+        params.cutoff         = dlg.getCutoff() * 2; // decrease cutoff for the next level
+        
+        CutPursuitPartition partition2(params);
+        Data* d2 = partition2.Process(*d1, errorMessage, &pDlg);
+        if (!d2)
         {
-            errorMessage = "Failed to compute partition";
             return false;
         }
-        
-        // we create/activate Level-2's label scalar field to base cloud
-        sfIdx = d1->getScalarFieldIndexByName(LEVEL_2_SF_NAME);
-        if (sfIdx < 0)
+        if (!nag.addLevel(d2))
         {
-            sfIdx = d1->addScalarField(LEVEL_2_SF_NAME);
+            errorMessage = "Failed to add level to NAG (SF memory allocation issue)";
+            return false;
         }
-        if (sfIdx < 0)
-        {
-            app->dispToConsole(QObject::tr("[GAE] Couldn't allocate a new scalar field for computing higher level partition! Try to free some memory ..."), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
-            break;
-        }
-        d1->setCurrentScalarField(sfIdx);
-
-        // Assign L3 component index to each base point
-        // first get the great superindex (will be a method of NAG)
-        ccScalarField::Shared sf1 = d1->getCCScalarField(sfIdx);
-
-        int low = 0;
-        int high = 2;
-        std::vector<Data*> dataList = { d1, d2, d3 };
-
-        std::vector<int32_t> superIndex(dataList[low]->numNodes());
-        std::iota(superIndex.begin(), superIndex.end(), 0); // identity: each base node starts as its own index
-        for (int level = low; level < high; ++level) 
-        {
-            const std::vector<int>& si = dataList[level]->superIndex;
-            for (std::size_t i = 0; i < superIndex.size(); ++i)
-            {
-                superIndex[i] = si[superIndex[i]];
-            }
-        }
-
-        for (unsigned i = 0; i < d1->size(); ++i)
-        {
-            sf1->setValue(i, static_cast<ScalarType>(superIndex[i]));
-        }
-        sf1->computeMinAndMax();
 
         //Upadate display
         cloud->setEnabled(false);
 
-        d1->setName(QObject::tr("%1 (res.:%2 - reg:%2 - cutoff:%5)").arg(cloud->getName()).arg(resolution).arg(params.regularization).arg(params.cutoff));
-        d1->setCurrentDisplayedScalarField(sfIdx);
-        d1->showSF(true);
-        d1->prepareDisplayForRefresh();
+        d0->setName(QObject::tr("%1 (res.:%2 - reg:%2 - cutoff:%5)").arg(cloud->getName()).arg(resolution).arg(params.regularization).arg(params.cutoff));
+        d0->showSF(true);
+        d0->prepareDisplayForRefresh();
 
+        app->addToDB(d0);
         app->addToDB(d1);
+        app->addToDB(d2);
         app->refreshAll();
 
         qint64 time_ms = timer.elapsed();
         //we display block volume computation timing only if no error occurred!
         if (app)
         {
-            app->dispToConsole(QObject::tr("[GAE] Created %1 segments in cloud '%2': %3 s").arg(d2->numNodes()).arg(cloudName).arg(time_ms / 1000.0, 0, 'f', 3),
+            app->dispToConsole(QObject::tr("[GAE] Created %1 segments in cloud '%2': %3 s").arg(d1->numNodes()).arg(cloudName).arg(time_ms / 1000.0, 0, 'f', 3),
                 ccMainAppInterface::STD_CONSOLE_MESSAGE);
-            app->dispToConsole(QObject::tr("[GAE] Created %1 segments in cloud '%2': %3 s").arg(d3->numNodes()).arg(cloudName).arg(time_ms / 1000.0, 0, 'f', 3),
+            app->dispToConsole(QObject::tr("[GAE] Created %1 segments in cloud '%2': %3 s").arg(d2->numNodes()).arg(cloudName).arg(time_ms / 1000.0, 0, 'f', 3),
                 ccMainAppInterface::STD_CONSOLE_MESSAGE);
         }
     }
