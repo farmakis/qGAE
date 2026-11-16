@@ -42,22 +42,20 @@ Data::Data(const ccPointCloud& pc, const QString& name)
     clusterList.reserve(pc.size());
 }
 
-int Data::addField(const QString& name)
+int Data::addField(const std::string& name)
 {
-    const std::string stdName = name.toStdString();
-    int idx = getScalarFieldIndexByName(stdName);
+    int idx = getScalarFieldIndexByName(name);
     if (idx >= 0)
     {
         return idx;
     }
-
-    // the scalar field is allocated with the currently reserved point count
-    return addScalarField(stdName);
+    // the scalar field is allocated with the reserved point count
+    return addScalarField(name);
 }
 
-ccScalarField::Shared Data::getFeature(const QString& name)
+ccScalarField::Shared Data::getFeature(const std::string& name)
 {
-    int sfIdx = getScalarFieldIndexByName(name.toStdString());
+    int sfIdx = getScalarFieldIndexByName(name);
     return getCCScalarField(sfIdx);
 }
 

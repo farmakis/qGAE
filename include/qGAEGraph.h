@@ -19,6 +19,8 @@
 
 #include "qGAELevel.h"
 
+using Request = CCCoreLib::GeometricalAnalysisTools::MultiGeomCharacteristicRequest;
+
 //! Nested Acyclic Graph structure. In practise a list of Data objects of graphs
 //! with super indices to map from lower to higher levels.
 class NAG : public std::vector<Data*>
@@ -31,4 +33,9 @@ class NAG : public std::vector<Data*>
         std::vector<int> getSuperIndex(int high, int low = 0);
 
         bool addLevel(Data* data);
+
+        bool computeLevelFeatures(const std::vector<Request>& requests, 
+                                                               int level, 
+                                                               int fromLevel = 0, 
+                                           const ccProgressDialog* pDlg      = nullptr);
 };

@@ -149,7 +149,7 @@ bool qGAEProcess::Compute(const qGAEDialog& dlg,
 
         using GAT = CCCoreLib::GeometricalAnalysisTools;
         GAT::MultiGeomCharacteristicRequestSet requests;
-        const char* names[3] = { "Nx", "Ny", "Nz" };
+        const std::string names[3] = { "Nx", "Ny", "Nz" };
 
         for (int k = 0; k < 3; ++k)
         {
@@ -209,8 +209,7 @@ bool qGAEProcess::Compute(const qGAEDialog& dlg,
 
         for (int k = 0; k < 3; ++k)
         {
-            int idx = d1->getScalarFieldIndexByName(levelNames[k]);
-            if (idx < 0) idx = d1->addScalarField(levelNames[k]);
+            int idx = d1->addField(levelNames[k]);
             if (idx < 0) { /* error, memory */ break; }
 
             GAT::MultiGeomCharacteristicRequest r;
@@ -221,58 +220,10 @@ bool qGAEProcess::Compute(const qGAEDialog& dlg,
             requests.push_back(r);
         }
 
-        for (int rv = 0; rv < d1->numNodes(); ++rv)
+        if (!nag.computeLevelFeatures(requests, 1, 0, &pDlg))
         {
-            ScalarType value = CCCoreLib::NAN_VALUE;
-
-            // get segment points
-            auto start  = d1->subPointer[rv];
-            auto end    = d1->subPointer[rv + 1];
-            unsigned pointCount  = end - start;
-            
-            DgmOctree::NeighboursSet pointsInSegment;
-            try
-            {
-                pointsInSegment.resize(pointCount);
-            }
-            catch (const std::bad_alloc&)
-            {
-                return false;
-            }
-
-            DgmOctree::NeighboursSet::iterator it = pointsInSegment.begin();
-            for (unsigned i = 0; i < pointCount; ++i, ++it)
-            {
-                DgmOctree::PointDescriptor pointInfo;
-                it->point = d0->getPoint(d0->clusterList[start + i]);
-                it->pointIndex = d0->clusterList[start + i];
-            }
-
-            //the Neighbourhood is shared by all the characteristics
-            CCCoreLib::DgmOctreeReferenceCloud neighboursCloud(&pointsInSegment, pointCount);
-            CCCoreLib::Neighbourhood Z(&neighboursCloud);
-
-            const CCVector3* N = Z.getLSPlaneNormal();
-            for (const GAT::MultiGeomCharacteristicRequest& r : requests)
-	        {
-                value = CCCoreLib::NAN_VALUE;
-                if (N)
-                {
-                    if (r.subOption == 0)
-                    {
-                        value = N->x;
-                    }
-                    else if (r.subOption == 1)
-                    {
-                        value = N->y;
-                    }
-                    else if (r.subOption == 2)
-                    {
-                        value = N->z;
-                    }
-                }
-                r.sf->setValue(rv, value);
-            }
+            errorMessage = "Failed to compute segment features at level 1";
+            return false;
         }
 
         // create the higher level scalar fields in lower to host feature values of segments

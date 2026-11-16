@@ -54,13 +54,23 @@ Data* VoxelPartition::Process(ccPointCloud* cloud, QString& errorMessage, CCCore
         }
     }
 
-    // get cell centers at the given octree level
+    // create the Data object to hold the voxel cloud and its graph
     const unsigned cellsNumber = theOctree->getCellNumber(m_octreeLevel);
-    std::vector<CCVector3> centers(cellsNumber);
+    Data* data = new Data(cellsNumber);
+    if (!data->reserve(cellsNumber))
+    {
+        errorMessage = QObject::tr("[GAE] Not enough memory to create voxel cloud for '%1'!").arg(cloud->getName());
+        delete data;
+        return nullptr;
+    }
+
+    // get cell centers at the given octree level
+    std::vector<CCVector3> centers(cellsNumber);\
     CCCoreLib::DgmOctree::cellCodesContainer codes;
     theOctree->getCellCodes(m_octreeLevel, codes, true);
     void* additionalParameters[]
     { 
+        static_cast<void*>(data),
         static_cast<void*>(&centers), 
         static_cast<void*>(&codes)
     };
@@ -77,14 +87,6 @@ Data* VoxelPartition::Process(ccPointCloud* cloud, QString& errorMessage, CCCore
         return nullptr;
 	}
 
-    // create the Data object to hold the voxel cloud and its graph
-    Data* data = new Data(cellsNumber);
-    if (!data->reserve(cellsNumber))
-    {
-        errorMessage = QObject::tr("[GAE] Not enough memory to create voxel cloud for '%1'!").arg(cloud->getName());
-        delete data;
-        return nullptr;
-    }
     data->subPointer.resize(cellsNumber);
     for (unsigned i = 0; i < cellsNumber; ++i)
     {
@@ -120,8 +122,9 @@ bool VoxelPartition::ComputeVoxelsAtLevel(  const CCCoreLib::DgmOctree::octreeCe
                                             CCCoreLib::NormalizedProgress* nProgress)
 {
     //parameters
-    auto* centers = static_cast<std::vector<CCVector3>*>(additionalParameters[0]);
-    auto* codes   = static_cast<const CCCoreLib::DgmOctree::cellCodesContainer*>(additionalParameters[1]);
+    auto* data    = static_cast<Data*>(additionalParameters[0]);
+    auto* centers = static_cast<std::vector<CCVector3>*>(additionalParameters[1]);
+    auto* codes   = static_cast<const CCCoreLib::DgmOctree::cellCodesContainer*>(additionalParameters[2]);
 
     // get the cell's center coordinates and add it as point to the voxel cloud
     Tuple3i cellPos;

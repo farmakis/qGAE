@@ -45,7 +45,7 @@ class Data : public ccPointCloud
 
         //! Adds (or retrieves) a scalar field by name, and reserves/resizes it
         /** \return the scalar field index, or -1 on failure **/
-        int addField(const QString& name);
+        int addField(const std::string& name);
 
         //! Whether the point memory was successfully reserved
         bool isValid() const { return m_valid; }
@@ -65,7 +65,7 @@ class Data : public ccPointCloud
         //! Returns the number of scalar fields stored in this cloud
         unsigned numFeatures() const { return getNumberOfScalarFields(); }
         //! Returns a pointer to the scalar field that hold the feature by name
-        ccScalarField::Shared getFeature(const QString& name);
+        ccScalarField::Shared getFeature(const std::string& name);
 
         /* convert edge list to forward-star representation */
 		/* adapted from the edge_list_to_forward_star().cpp file of the
