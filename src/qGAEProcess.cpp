@@ -56,10 +56,6 @@
 using namespace PCP;
 
 int RES_FACTOR_NORMALS = 3; // resolution factor for normals computation 
-//! Default name for GAE scalar fields
-static const char LEVEL_1_SF_NAME[] = "Level 1";
-static const char LEVEL_2_SF_NAME[] = "Level 2";
-
 
 bool qGAEProcess::Compute(const qGAEDialog& dlg,
                                 QString& errorMessage,
@@ -96,17 +92,18 @@ bool qGAEProcess::Compute(const qGAEDialog& dlg,
     {
         return false;
     }
+    
+    int connectivity                             = dlg.getConnectivity();
+    int octreeLevel                              = dlg.getResolution();
     const std::vector<double> regularizationList = dlg.getRegularization();
-    const std::vector<double> spatialWeightList = dlg.getSpatialWeight();
-    const std::vector<int>    cutoffList = dlg.getCutoff();
+    const std::vector<double> spatialWeightList  = dlg.getSpatialWeight();
+    const std::vector<int>    cutoffList         = dlg.getCutoff();
 
     // some parallel cut pursuit params (Level-1 values; Level-2 values are set later)
 	PCP::Parameters params;
-    params.knn            = dlg.getConnectivity();
-    params.knnRadius      = dlg.getResolution();
-    params.regularization = static_cast<float>(regularizationList[0]);
-    params.spatialWeight  = static_cast<float>(spatialWeightList[0]);
-    params.cutoff         = cutoffList[0];
+    params.regularization   = static_cast<float>(regularizationList[0]);
+    params.spatialWeight    = static_cast<float>(spatialWeightList[0]);
+    params.cutoff           = cutoffList[0];
 
     ccProgressDialog pDlg(true, parentWidget);
     pDlg.setAutoClose(false);
@@ -138,7 +135,7 @@ bool qGAEProcess::Compute(const qGAEDialog& dlg,
         }
 
         NAG nag;
-        VoxelPartition voxelizer(params.knnRadius, params.knn);
+        VoxelPartition voxelizer(octreeLevel, connectivity);
         Data* d0 = voxelizer.Process(cloud, errorMessage, &pDlg);
         if (!d0)
         {
@@ -168,8 +165,8 @@ bool qGAEProcess::Compute(const qGAEDialog& dlg,
             requests.push_back(r);
         }
 
-        // TEMPORARILY: The knnRadius stored the octree level
-        PointCoordinateType voxelSize = theOctree->getCellSize(params.knnRadius);
+        // TEMPORARILY: Using radius for feature computation. Will change to voxel/segment context.
+        PointCoordinateType voxelSize = theOctree->getCellSize(octreeLevel);
         PointCoordinateType radius = static_cast<PointCoordinateType>(voxelSize * RES_FACTOR_NORMALS);
 
         GAT::ErrorCode err = GAT::ComputeCharacteristics(requests,
