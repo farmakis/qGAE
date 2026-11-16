@@ -18,6 +18,7 @@
 #include "qGAEGraph.h"
 
 //system
+#include <numeric>
 #include <utility>
 #include <vector>
 
@@ -34,12 +35,12 @@ NAG::NAG(std::vector<Data*> dataList)
 {
 }
 
-std::vector<int> NAG::getSuperIndex(int high, int low)
+std::vector<int32_t> NAG::getSuperIndex(int high, int low)
 { 
-    assert(low >= 0 || high < static_cast<int>(size()) || low < high);
+    assert(low >= 0 && high < static_cast<int>(size()) && low < high);
 
     // start with the superIndex of the lowest level
-    std::vector<int> superIndex = (*this)[low]->superIndex;
+    std::vector<int32_t> superIndex = (*this)[low]->superIndex;
     for (int level = low + 1; level < high; ++level) 
     {
         for (std::size_t i = 0; i < superIndex.size(); ++i)
@@ -52,21 +53,43 @@ std::vector<int> NAG::getSuperIndex(int high, int low)
 
 bool NAG::computeLevelFeatures(const std::vector<Request>& requests, 
                                                             int level, 
-                                                            int fromLevel/*=0*/, 
+                                                            int subLevel/*=0*/, 
                                         const ccProgressDialog* pDlg/*=nullptr*/)
 {
     // Recover the level Data object we will be working on
+    if (level <= subLevel || subLevel < 0 || level >= static_cast<int>(size()))
+    {
+        assert(false);
+        return false;
+    }
     Data* data = (*this)[level];
+    Data* subData = (*this)[subLevel];
 
-    // Get points from the sub-level clusters.
-    // These will be used to compute segment geometric features
+    // helper arrays
+    std::vector<int32_t> superIndex = getSuperIndex(level, subLevel); 
+    std::vector<int32_t> pointers(data->numNodes() + 1, 0);
+    std::vector<int32_t> clusters(subData->numNodes()); // low-level indices grouped by high-level segment
+
+    // get super index histogram
+    for (int i = 0; i < subData->numNodes(); ++i)
+        ++pointers[superIndex[i] + 1];
+
+    // prefix sum -> start of each segment
+    for (int i = 0; i < data->numNodes(); ++i)
+        pointers[i + 1] += pointers[i];
+
+    // scatter (counting sort, stable: indices stay ascending inside a segment)
+    std::vector<int32_t> cursor(pointers.begin(), pointers.end() - 1);
+    for (int i = 0; i < superIndex.size(); ++i)
+        clusters[cursor[superIndex[i]]++] = i;
+
     for (int rv = 0; rv < data->numNodes(); ++rv)
     {
         const CCVector3* queryPoint = data->getPoint(rv);
 
-        // get segment points
-        auto start  = data->subPointer[rv];
-        auto end    = data->subPointer[rv + 1];
+        // get segment points from the sub-level
+        auto start  = pointers[rv];
+        auto end    = pointers[rv + 1];
         unsigned numberOfPoints  = end - start;
         
         DgmOctree::NeighboursSet pointsInSegment;
@@ -82,9 +105,8 @@ bool NAG::computeLevelFeatures(const std::vector<Request>& requests,
         DgmOctree::NeighboursSet::iterator it = pointsInSegment.begin();
         for (unsigned i = 0; i < numberOfPoints; ++i, ++it)
         {
-            DgmOctree::PointDescriptor pointInfo;
-            auto pointIndex = (*this)[level-1]->clusterList[start + i];
-            it->point = (*this)[level-1]->getPoint(pointIndex);
+            unsigned pointIndex = clusters[start + i];
+            it->point = subData->getPoint(pointIndex);
             it->pointIndex = pointIndex;
         }
 
@@ -155,6 +177,28 @@ bool NAG::computeLevelFeatures(const std::vector<Request>& requests,
         }
     }
     return true;
+}
+
+std::vector<float> NAG::getSubSize(int high, int low)
+{
+    // Compute the number of `low`-level elements contained in each
+    //  `high`-level segment.
+
+    // The sizes are computed in a bottom-up approach using the
+    // `superIndex` at each level, starting from the `low`-level
+    // sizes.
+
+    // Seed: level `low+1` already knows the size of its children
+    std::vector<float> subSizes = (*this)[low + 1]->nodeSize;
+
+    for (int level = low + 1; level < high; ++level)
+    {       
+        std::vector<float> next((*this)[level + 1]->numNodes(), 0.0f);
+        for (size_t i = 0; i < (*this)[level]->numNodes(); ++i)
+            next[(*this)[level]->superIndex[i]] += subSizes[i];
+        subSizes = std::move(next);
+    }
+    return subSizes;
 }
 
 bool NAG::addLevel(Data* data)

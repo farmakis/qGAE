@@ -30,12 +30,15 @@ class NAG : public std::vector<Data*>
         explicit NAG(std::vector<Data*> dataList);
 
         //! Returns the super index mapping from level `low` to level `high`
-        std::vector<int> getSuperIndex(int high, int low = 0);
+        std::vector<int32_t> getSuperIndex(int high, int low = 0);
 
         bool addLevel(Data* data);
 
         bool computeLevelFeatures(const std::vector<Request>& requests, 
                                                                int level, 
-                                                               int fromLevel = 0, 
+                                                               int subLevel = 0, 
                                            const ccProgressDialog* pDlg      = nullptr);
+
+    private:
+        std::vector<float> getSubSize(int high, int low = 0);
 };
