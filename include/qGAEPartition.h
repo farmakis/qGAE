@@ -55,9 +55,9 @@ class VoxelPartition
 			\param additionalParameters see method description
 			\param nProgress optional (normalized) progress notification (per-point)
 		**/
-        static bool ComputeVoxelsAtLevel(   const CCCoreLib::DgmOctree::octreeCell& cell,
-                                            void** additionalParameters,
-                                            CCCoreLib::NormalizedProgress* nProgress = nullptr);
+        static bool ComputeVoxelsAtOctreeLevel(     const CCCoreLib::DgmOctree::octreeCell& cell,
+                                                    void** additionalParameters,
+                                                    CCCoreLib::NormalizedProgress* nProgress = nullptr);
 };
 
 //! Partitions a graph contained in a `Data` object using cut-pursuit.

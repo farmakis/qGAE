@@ -53,10 +53,16 @@ int Data::addField(const std::string& name)
     return addScalarField(name);
 }
 
-ccScalarField::Shared Data::getFeature(const std::string& name)
+ccScalarField* Data::getFeature(const int index)
 {
-    int sfIdx = getScalarFieldIndexByName(name);
-    return getCCScalarField(sfIdx);
+    assert(index >= 0 && index < static_cast<int>(features.size()));
+	return static_cast<ccScalarField*>(features[index].sf);
+}
+
+void Data::linkToOriginalPoints(const ccPointCloud* cloud)
+{
+	m_subPtr = cloud;
+	sub.resize(cloud ? cloud->size() : 0);
 }
 
 /* adapted from the edge_list_to_forward_star().cpp file of the

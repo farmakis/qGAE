@@ -51,10 +51,48 @@ std::vector<int32_t> NAG::getSuperIndex(int high, int low)
     return superIndex;
 }
 
-bool NAG::computeLevelFeatures(const std::vector<Request>& requests, 
-                                                            int level, 
-                                                            int subLevel/*=0*/, 
-                                        const ccProgressDialog* pDlg/*=nullptr*/)
+bool NAG::setLevelFeatures(const ccLibAlgorithms::GeomCharacteristicWithSubOptionSet& selectedFeatures, int level)
+{
+    if (level >= numLevels() || level < 0)
+    {
+        assert(false);
+        return false;
+    }
+
+    // store the selected features in the level's Data object
+    Data* data = (*this)[level];
+    data->features.clear();
+    data->features.reserve(selectedFeatures.size());
+
+    for (const ccLibAlgorithms::GeomCharacteristicWithSubOption& feature : selectedFeatures)
+    {
+        QString sfName = ccLibAlgorithms::GetCharacteristicSFName(feature.charac, feature.subOption, level);
+        if (sfName.isEmpty())
+        {
+            return false;
+        }
+
+        int sfIdx = data->addField(sfName.toStdString());
+        if (sfIdx < 0)
+        {
+            ccLog::Warning(QString("Failed to add scalar field for feature '%1' at level %2").arg(sfName).arg(level));
+            return false;
+        }
+
+        // populate the request structure
+        CCCoreLib::GeometricalAnalysisTools::MultiGeomCharacteristicRequest request;
+        request.c = feature.charac;
+        request.subOption = feature.subOption;
+        request.sf = data->getCCScalarField(sfIdx).get();
+        request.sfIdx = sfIdx;  
+
+        data->features.push_back(request);
+    }
+
+    return true;
+}
+
+bool NAG::computeLevelFeatures(int level, int subLevel/*=0*/, const ccProgressDialog* pDlg/*=nullptr*/)
 {
     // Recover the level Data object we will be working on
     if (level <= subLevel || subLevel < 0 || level >= static_cast<int>(size()))
@@ -114,7 +152,7 @@ bool NAG::computeLevelFeatures(const std::vector<Request>& requests,
         CCCoreLib::DgmOctreeReferenceCloud neighboursCloud(&pointsInSegment, numberOfPoints);
         CCCoreLib::Neighbourhood Z(&neighboursCloud);
 
-        for (const Request& r : requests)
+        for (const CCCoreLib::GeometricalAnalysisTools::MultiGeomCharacteristicRequest& r : data->features)
         {
             ScalarType value = NAN_VALUE;
             switch (r.c)

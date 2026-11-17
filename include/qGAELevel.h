@@ -52,9 +52,7 @@ class Data : public ccPointCloud
 
         // bool computeFeatures(GAT::MultiGeomCharacteristicRequestSet requests);
 
-        //! Shared pointers to the scalar fields that will be used as input features
-        /** Usage: features[i]->getValue(pointIndex) **/
-        std::vector<ccScalarField::Shared> features;
+        void linkToOriginalPoints(const ccPointCloud* cloud);
 
         /** getter functions */ 
 
@@ -63,9 +61,9 @@ class Data : public ccPointCloud
         //! Returns the number of edges in the graph
         int32_t numEdges() const { return static_cast<int32_t>(edges.size() / 2); }
         //! Returns the number of scalar fields stored in this cloud
-        unsigned numFeatures() const { return getNumberOfScalarFields(); }
-        //! Returns a pointer to the scalar field that hold the feature by name
-        ccScalarField::Shared getFeature(const std::string& name);
+        size_t numFeatures() const { return features.size(); }
+        //! Returns a pointer to the scalar field that holds the feature by index in the `features` vector
+        ccScalarField* getFeature(const int index);
 
         /* convert edge list to forward-star representation */
 		/* adapted from the edge_list_to_forward_star().cpp file of the
@@ -80,18 +78,23 @@ class Data : public ccPointCloud
 
     protected:
         bool m_valid = false;
+        const ccPointCloud* m_subPtr = nullptr; //!< point cloud to hold the original points
 
     public:
         std::vector<int32_t> edges;
         std::vector<float> nodeSize;
         std::vector<float> edgeAttr;
+        std::vector<int32_t> sub; //stores the index of the current partition to the lower points
         std::vector<int32_t> superIndex;
         std::vector<int32_t> clusterList; //stores nodes indices per cluster in the graph
         std::vector<int32_t> subPointer;  //points to the start of the cluster in the sub levels clusterList
+
+        /* set of requests for computing features */
+        CCCoreLib::GeometricalAnalysisTools::MultiGeomCharacteristicRequestSet features;
 };
 
 // class Segment : CCCoreLib::Neighboirhood
 // {
 //     public:
-//         explicit Segment()
+//         explicit Segment()s
 // }

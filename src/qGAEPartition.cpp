@@ -31,9 +31,12 @@
 
 //CCCoreLib
 #include <CloudSamplingTools.h>
+#include <DgmOctreeReferenceCloud.h>
 #include <GenericProgressCallback.h>
+#include <GeometricalAnalysisTools.h>
 #include <ReferenceCloud.h>
 
+using GAT = CCCoreLib::GeometricalAnalysisTools;
 
 VoxelPartition::VoxelPartition(int octreeLevel, int connectivity)
     : m_octreeLevel(octreeLevel)
@@ -63,20 +66,21 @@ Data* VoxelPartition::Process(ccPointCloud* cloud, QString& errorMessage, CCCore
         delete data;
         return nullptr;
     }
+    data->linkToOriginalPoints(cloud);
 
-    // get cell centers at the given octree level
-    std::vector<CCVector3> centers(cellsNumber);\
+    // get cell xyz at the given octree level
+    std::vector<CCVector3> pos(cellsNumber);
     CCCoreLib::DgmOctree::cellCodesContainer codes;
     theOctree->getCellCodes(m_octreeLevel, codes, true);
     void* additionalParameters[]
     { 
-        static_cast<void*>(data),
-        static_cast<void*>(&centers), 
+        static_cast<void*>(&data->sub),
+        static_cast<void*>(&pos), 
         static_cast<void*>(&codes)
     };
 
     if (theOctree->executeFunctionForAllCellsAtLevel(	m_octreeLevel,
-														&ComputeVoxelsAtLevel,
+														&ComputeVoxelsAtOctreeLevel,
 														additionalParameters,
 														true,
 														progressCb,
@@ -87,11 +91,10 @@ Data* VoxelPartition::Process(ccPointCloud* cloud, QString& errorMessage, CCCore
         return nullptr;
 	}
 
-    data->subPointer.resize(cellsNumber);
-    for (unsigned i = 0; i < cellsNumber; ++i)
+    // add the voxel points to the Data object
+    for (const CCVector3& P : pos)
     {
-        data->addPoint(centers[i]);
-        data->subPointer[i] = static_cast<int32_t>(i);
+        data->addPoint(P);
     }
 
     ccOctree::Shared dataOctree = data->getOctree();
@@ -117,26 +120,33 @@ Data* VoxelPartition::Process(ccPointCloud* cloud, QString& errorMessage, CCCore
     return data;
 }
 
-bool VoxelPartition::ComputeVoxelsAtLevel(  const CCCoreLib::DgmOctree::octreeCell& cell,
-                                            void** additionalParameters,
-                                            CCCoreLib::NormalizedProgress* nProgress)
+bool VoxelPartition::ComputeVoxelsAtOctreeLevel(    const CCCoreLib::DgmOctree::octreeCell& cell,
+                                                    void** additionalParameters,
+                                                    CCCoreLib::NormalizedProgress* nProgress)
 {
     //parameters
-    auto* data    = static_cast<Data*>(additionalParameters[0]);
-    auto* centers = static_cast<std::vector<CCVector3>*>(additionalParameters[1]);
+    auto* sub = static_cast<std::vector<int32_t>*>(additionalParameters[0]);
+    auto* pos = static_cast<std::vector<CCVector3>*>(additionalParameters[1]);
     auto* codes   = static_cast<const CCCoreLib::DgmOctree::cellCodesContainer*>(additionalParameters[2]);
 
-    // get the cell's center coordinates and add it as point to the voxel cloud
-    Tuple3i cellPos;
-    CCVector3 center;
-    cell.parentOctree->getCellPos(cell.truncatedCode, cell.level, cellPos, true);
-    cell.parentOctree->computeCellCenter(cellPos, cell.level, center);
+    // get the voxel xyz as the cell's center and add it as point to the voxel cloud
+    Tuple3i voxelGridCoords;
+    CCVector3 voxelWorldCoords;
+    cell.parentOctree->getCellPos(cell.truncatedCode, cell.level, voxelGridCoords, true);
+    cell.parentOctree->computeCellCenter(voxelGridCoords, cell.level, voxelWorldCoords);
 
     // get the cell's index in the ordered list of cell codes
     const auto it = std::lower_bound(codes->begin(), codes->end(), cell.truncatedCode);
-    const size_t cellIdx = static_cast<size_t>(it - codes->begin());
+    const unsigned voxelIndex = static_cast<unsigned>(it - codes->begin());
+    (*pos)[voxelIndex] = voxelWorldCoords;
 
-    (*centers)[cellIdx] = center;
+    // Continue to voxel index assignement at sub points
+    for (unsigned i = 0; i < cell.points->size(); ++i)
+    {
+        unsigned pointIndex = cell.points->getPointGlobalIndex(i);
+        (*sub)[pointIndex] = static_cast<int32_t>(voxelIndex);
+    }
+
     return true;
 }
 
@@ -202,7 +212,7 @@ Data* CutPursuitPartition::Process(Data& data, QString& errorMessage, CCCoreLib:
 
         for (unsigned f = 0; f < data.numFeatures(); ++f)
         {
-            ccScalarField::Shared sf    = data.getCCScalarField(f);
+            ccScalarField*        sf    = data.getFeature(f);
             float                 value = static_cast<float>(sf->getValue(i));
 
             // Sanitize NaN/Inf, force it to 0.0
