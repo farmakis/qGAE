@@ -17,7 +17,7 @@
    <iconset resource="../qGAE.qrc">
     <normaloff>:/CC/plugin/qGAE/images/qGAE.png</normaloff>:/CC/plugin/qGAE/images/qGAE.png</iconset>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout" stretch="1,1,0">
+  <layout class="QVBoxLayout" name="verticalLayout" stretch="1,1,0,0">
    <item>
     <widget class="QTextEdit" name="disclaimerTextEdit_2">
      <property name="readOnly">
@@ -231,6 +231,16 @@ p, li { white-space: pre-wrap; }
           </widget>
          </item>
     </layout>
+   </item>
+   <item>
+    <widget class="QPushButton" name="featureMenuButton">
+     <property name="toolTip">
+      <string>Select the features to compute and their level</string>
+     </property>
+     <property name="text">
+      <string>Features</string>
+     </property>
+    </widget>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="buttonBox">

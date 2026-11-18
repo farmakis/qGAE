@@ -1,6 +1,6 @@
 //##########################################################################
 //#                                                                        #
-//#                CLOUDCOMPARE PLUGIN: qGAE                              #
+//#                CLOUDCOMPARE PLUGIN: qGAE                               #
 //#                                                                        #
 //#  This program is free software; you can redistribute it and/or modify  #
 //#  it under the terms of the GNU General Public License as published by  #
@@ -58,7 +58,7 @@ ccScalarField* Data::getFeature(const int index)
     assert(index >= 0 && index < static_cast<int>(features.size()));
 	return static_cast<ccScalarField*>(features[index].sf);
 }
-
+	
 void Data::linkToOriginalPoints(const ccPointCloud* cloud)
 {
 	m_subPtr = cloud;

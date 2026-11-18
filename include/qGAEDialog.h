@@ -19,6 +19,9 @@
 
 #include <ui_qGAEDialog.h>
 
+#include "qGAEFeatures.h"
+#include "qGAEFeatureDialog.h"
+
 //Qt
 #include <QSettings>
 #include <vector>
@@ -45,9 +48,15 @@ public:
 	//! Checks that the three lists are valid and of the same length (returns the error otherwise)
 	bool validateLists(QString& error) const;
 
+	//! Features selected in the feature dialog
+	std::vector<Features::FeatureData> getSelectedFeatures() const;
+	//! Level at which the features are computed
+	int getFeatureLevel() const;
+
 	void loadParamsFromPersistentSettings();
 	void saveParamsToPersistentSettings();
 
 private:
 	ccMainAppInterface* m_app;
+	qGAEFeatureDialog*  m_featureDialog;
 };

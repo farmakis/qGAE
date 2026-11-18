@@ -1,0 +1,337 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>GAEFeatureDialog</class>
+ <widget class="QDialog" name="GAEFeatureDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>526</width>
+    <height>608</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Geometric features</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_7">
+   <item>
+    <widget class="QFrame" name="frame">
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>101</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Level</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QSpinBox" name="levelSpinBox">
+        <property name="toolTip">
+         <string>Hierarchy level at which the features are computed</string>
+        </property>
+        <property name="minimum">
+         <number>-1</number>
+        </property>
+        <property name="maximum">
+         <number>99</number>
+        </property>
+        <property name="value">
+         <number>0</number>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>101</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayout_6">
+       <item>
+        <widget class="QGroupBox" name="featureGroupBox">
+         <property name="toolTip">
+          <string>Geometric features (based on local eigenvalues: (L1, L2, L3))</string>
+         </property>
+         <property name="title">
+          <string>Features</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_2">
+          <item>
+           <widget class="QCheckBox" name="eigSumCheckBox">
+            <property name="toolTip">
+             <string>L1 + L2 + L3</string>
+            </property>
+            <property name="text">
+             <string>Sum of eigenvalues</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="eigOmnivarianceCheckBox">
+            <property name="toolTip">
+             <string>(L1 * L2 * L3)^(1/3)</string>
+            </property>
+            <property name="text">
+             <string>Omnivariance</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="eigenentropyCheckBox">
+            <property name="toolTip">
+             <string>-( L1*ln(L1) + L2*ln(L2) + L3*ln(L3) )</string>
+            </property>
+            <property name="text">
+             <string>Eigenentropy</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="eigAnisotropyCheckBox">
+            <property name="toolTip">
+             <string>(L1 - L3)/L1</string>
+            </property>
+            <property name="text">
+             <string>Anisotropy</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="eigPlanarityCheckBox">
+            <property name="toolTip">
+             <string>(L2 - L3)/L1</string>
+            </property>
+            <property name="text">
+             <string>Planarity</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="eigLinearityCheckBox">
+            <property name="toolTip">
+             <string>(L1 - L2)/L1</string>
+            </property>
+            <property name="text">
+             <string>Linearity</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="eigPCA1CheckBox">
+            <property name="toolTip">
+             <string>L1 / (L1 + L2 + L3)</string>
+            </property>
+            <property name="text">
+             <string>PCA1</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="eigPCA2CheckBox">
+            <property name="toolTip">
+             <string>L2 / (L1 + L2 + L3)</string>
+            </property>
+            <property name="text">
+             <string>PCA2</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="eigSurfaceVarCheckBox">
+            <property name="toolTip">
+             <string>L3 / (L1 + L2 + L3)</string>
+            </property>
+            <property name="text">
+             <string>Surface variation</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="eigSphericityCheckBox">
+            <property name="toolTip">
+             <string>L3 / L1</string>
+            </property>
+            <property name="text">
+             <string>Sphericity</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="eigVerticalityCheckBox">
+            <property name="toolTip">
+             <string>1 - |Z.N|</string>
+            </property>
+            <property name="text">
+             <string>Verticality</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="eigenvalue1CheckBox">
+            <property name="text">
+             <string>1st eigenvalue</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="eigenvalue2CheckBox">
+            <property name="text">
+             <string>2nd eigenvalue</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="eigenvalue3CheckBox">
+            <property name="text">
+             <string>3rd eigenvalue</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="degreeOfPlanarityCheckBox">
+            <property name="text">
+             <string>Degree of planarity (M)</string>
+            </property>
+            <property name="toolTip">
+             <string>ln(L1 / L3) (see Fernández, O. 2005. Obtaining a Best Fitting Plane Through 3D Georeferenced Data)</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="degreeOfLinearityCheckBox">
+            <property name="text">
+             <string>Degree of linearity (K)</string>
+            </property>
+            <property name="toolTip">
+             <string>ln(L1 / L2) / ln(L2 / L3) (see Fernández, O. 2005. Obtaining a Best Fitting Plane Through 3D Georeferenced Data)</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="normalXCheckBox">
+            <property name="text">
+             <string>Normal X (Nx)</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="normalYCheckBox">
+            <property name="text">
+             <string>Normal Y (Ny)</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="normalZCheckBox">
+            <property name="text">
+             <string>Normal Z (Nz)</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <spacer name="verticalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <spacer name="verticalSpacer_3">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>6</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok|QDialogButtonBox::Reset</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>GAEFeatureDialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>248</x>
+     <y>254</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>157</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>GAEFeatureDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>316</x>
+     <y>260</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>286</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

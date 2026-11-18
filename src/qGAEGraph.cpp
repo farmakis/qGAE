@@ -1,6 +1,6 @@
 //##########################################################################
 //#                                                                        #
-//#                CLOUDCOMPARE PLUGIN: qGAE                              #
+//#                CLOUDCOMPARE PLUGIN: qGAE                               #
 //#                                                                        #
 //#  This program is free software; you can redistribute it and/or modify  #
 //#  it under the terms of the GNU General Public License as published by  #
@@ -16,6 +16,7 @@
 //##########################################################################
 
 #include "qGAEGraph.h"
+#include "qGAEFeatures.h"
 
 //system
 #include <numeric>
@@ -37,10 +38,22 @@ NAG::NAG(std::vector<Data*> dataList)
 
 std::vector<int32_t> NAG::getSuperIndex(int high, int low)
 { 
-    assert(low >= 0 && high < static_cast<int>(size()) && low < high);
+    assert(low >= -1 && high < static_cast<int>(size()) && low < high);
 
+    
     // start with the superIndex of the lowest level
-    std::vector<int32_t> superIndex = (*this)[low]->superIndex;
+    std::vector<int32_t> superIndex;
+    if (low == -1 && (*this)[0]->hasSub())
+    {
+        // if the low level is the original points (not member of the NAG), 
+        // we start directly with the sub vector that maps them to the level-0 nodes (voxels)
+        superIndex = (*this)[0]->sub;
+    }
+    else
+    {
+        superIndex = (*this)[low]->superIndex;
+    }
+
     for (int level = low + 1; level < high; ++level) 
     {
         for (std::size_t i = 0; i < superIndex.size(); ++i)
@@ -51,7 +64,7 @@ std::vector<int32_t> NAG::getSuperIndex(int high, int low)
     return superIndex;
 }
 
-bool NAG::setLevelFeatures(const ccLibAlgorithms::GeomCharacteristicWithSubOptionSet& selectedFeatures, int level)
+bool NAG::setLevelFeatures(const std::vector<Features::FeatureData>& selectedFeatures, int level)
 {
     if (level >= numLevels() || level < 0)
     {
@@ -59,14 +72,13 @@ bool NAG::setLevelFeatures(const ccLibAlgorithms::GeomCharacteristicWithSubOptio
         return false;
     }
 
-    // store the selected features in the level's Data object
     Data* data = (*this)[level];
     data->features.clear();
     data->features.reserve(selectedFeatures.size());
 
-    for (const ccLibAlgorithms::GeomCharacteristicWithSubOption& feature : selectedFeatures)
+    for (Features::FeatureData ftData : selectedFeatures)
     {
-        QString sfName = ccLibAlgorithms::GetCharacteristicSFName(feature.charac, feature.subOption, level);
+        QString sfName = GetFeatureSFName(ftData.f, ftData.subOption);
         if (sfName.isEmpty())
         {
             return false;
@@ -79,14 +91,11 @@ bool NAG::setLevelFeatures(const ccLibAlgorithms::GeomCharacteristicWithSubOptio
             return false;
         }
 
-        // populate the request structure
-        CCCoreLib::GeometricalAnalysisTools::MultiGeomCharacteristicRequest request;
-        request.c = feature.charac;
-        request.subOption = feature.subOption;
-        request.sf = data->getCCScalarField(sfIdx).get();
-        request.sfIdx = sfIdx;  
+        // complete the feaure data structure
+        ftData.sf = data->getCCScalarField(sfIdx).get();
+        ftData.sfIdx = sfIdx;  
 
-        data->features.push_back(request);
+        data->features.push_back(ftData);
     }
 
     return true;
@@ -95,33 +104,48 @@ bool NAG::setLevelFeatures(const ccLibAlgorithms::GeomCharacteristicWithSubOptio
 bool NAG::computeLevelFeatures(int level, int subLevel/*=0*/, const ccProgressDialog* pDlg/*=nullptr*/)
 {
     // Recover the level Data object we will be working on
-    if (level <= subLevel || subLevel < 0 || level >= static_cast<int>(size()))
+    if (level < 0 || level >= static_cast<int>(size()) || subLevel < -1 || subLevel > level)
     {
         assert(false);
         return false;
     }
     Data* data = (*this)[level];
-    Data* subData = (*this)[subLevel];
+
+    const ccPointCloud* sourcePoints = nullptr;
+    if (subLevel == -1)
+    {
+        sourcePoints = (*this)[0]->getOriginalCloud();
+    }
+    else
+    {
+        sourcePoints = (*this)[subLevel];
+    }
+
+    if (!sourcePoints)
+    {
+        assert(false);
+        return false;
+    }
 
     // helper arrays
     std::vector<int32_t> superIndex = getSuperIndex(level, subLevel); 
-    std::vector<int32_t> pointers(data->numNodes() + 1, 0);
-    std::vector<int32_t> clusters(subData->numNodes()); // low-level indices grouped by high-level segment
+    std::vector<int32_t> pointers(data->size() + 1, 0);
+    std::vector<int32_t> clusters(sourcePoints->size()); // low-level indices grouped by high-level segment
 
     // get super index histogram
-    for (int i = 0; i < subData->numNodes(); ++i)
+    for (unsigned i = 0; i < sourcePoints->size(); ++i)
         ++pointers[superIndex[i] + 1];
 
     // prefix sum -> start of each segment
-    for (int i = 0; i < data->numNodes(); ++i)
+    for (unsigned i = 0; i < data->size(); ++i)
         pointers[i + 1] += pointers[i];
 
     // scatter (counting sort, stable: indices stay ascending inside a segment)
     std::vector<int32_t> cursor(pointers.begin(), pointers.end() - 1);
-    for (int i = 0; i < superIndex.size(); ++i)
+    for (unsigned i = 0; i < superIndex.size(); ++i)
         clusters[cursor[superIndex[i]]++] = i;
 
-    for (int rv = 0; rv < data->numNodes(); ++rv)
+    for (unsigned rv = 0; rv < data->size(); ++rv)
     {
         const CCVector3* queryPoint = data->getPoint(rv);
 
@@ -144,7 +168,7 @@ bool NAG::computeLevelFeatures(int level, int subLevel/*=0*/, const ccProgressDi
         for (unsigned i = 0; i < numberOfPoints; ++i, ++it)
         {
             unsigned pointIndex = clusters[start + i];
-            it->point = subData->getPoint(pointIndex);
+            it->point = sourcePoints->getPoint(pointIndex);
             it->pointIndex = pointIndex;
         }
 
@@ -152,57 +176,45 @@ bool NAG::computeLevelFeatures(int level, int subLevel/*=0*/, const ccProgressDi
         CCCoreLib::DgmOctreeReferenceCloud neighboursCloud(&pointsInSegment, numberOfPoints);
         CCCoreLib::Neighbourhood Z(&neighboursCloud);
 
-        for (const CCCoreLib::GeometricalAnalysisTools::MultiGeomCharacteristicRequest& r : data->features)
+        for (const Features::FeatureData& fd : data->features)
         {
             ScalarType value = NAN_VALUE;
-            switch (r.c)
+            switch (fd.f)
             {
-                case GAT::Feature:
+                case Features::Feature::Eigen:
                     if (numberOfPoints > 3)
-                        value = static_cast<ScalarType>(Z.computeFeature(static_cast<CCCoreLib::Neighbourhood::GeomFeature>(r.subOption)));
+                        value = static_cast<ScalarType>(Z.computeFeature(static_cast<CCCoreLib::Neighbourhood::GeomFeature>(fd.subOption)));
                     break;
 
-                case GAT::Curvature:
-					if (numberOfPoints > 5)
-						value = Z.computeCurvature(*queryPoint, static_cast<CCCoreLib::Neighbourhood::CurvatureType>(r.subOption));
-					break;
+                // case Features::Feature::Curvature:
+				// 	if (numberOfPoints > 5)
+				// 		value = Z.computeCurvature(*queryPoint, static_cast<CCCoreLib::Neighbourhood::CurvatureType>(r.subOption));
+				// 	break;
 
-                case GAT::LocalDensity:
+                case Features::Feature::Density:
 					value = static_cast<ScalarType>(numberOfPoints);
 					break;
 
-                case GAT::Roughness:
-					if (numberOfPoints > 3)
-					{
-						// value = ZR.computeRoughness(*queryPoint, roughnessUpDir);
-                        value = Z.computeRoughness(*queryPoint, nullptr);
-					}
-					break;
-
-                case GAT::MomentOrder1:
-				{
-					value = Z.computeMomentOrder1(*queryPoint);
-				}
-					break;
-
-				case GAT::Normal:
+				case Features::Feature::Normal:
 				{
 					const CCVector3* N = Z.getLSPlaneNormal();
 					if (N)
-					{
-						if (r.subOption == 0)
-						{
-							value = N->x;
-						}
-						else if (r.subOption == 1)
-						{
-							value = N->y;
-						}
-						else if (r.subOption == 2)
-						{
-							value = N->z;
-						}
-					}
+                        switch (fd.subOption)
+			            {
+                        case Features::NormalAxis::Nx:
+                            value = N->x;
+                            break;
+                        case Features::NormalAxis::Ny:
+                            value = N->y;
+                            break;
+                        case Features::NormalAxis::Nz:
+                            value = N->z;
+                            break;
+                        default:
+                            assert(false);
+                            return false;
+                        }
+                    break;
 				}
 				break;
 
@@ -211,9 +223,61 @@ bool NAG::computeLevelFeatures(int level, int subLevel/*=0*/, const ccProgressDi
 					return false;
             }
 
-            r.sf->setValue(rv, value);
+            fd.sf->setValue(rv, value);
         }
     }
+    return true;
+}
+
+bool NAG::mapFeaturesToLowerLevel(int high, int low, const ccProgressDialog* pDlg/*=nullptr*/)
+{
+    // Can only map features down to the base level (level 0)
+    // points are only accessible as source for feature computation
+    assert(low >= 0 && high < static_cast<int>(size()));
+
+    Data* data = (*this)[high];
+    Data* dataLow = (*this)[low];
+
+    for (const Features::FeatureData& fd : data->features)
+    {
+        int sfIdx;
+        ccScalarField::Shared sfLow;
+        if (high == low)
+        {
+            // if the high and low levels are the same, we don't need to add a scalar field
+            // just activate the existing scalar fields
+            sfIdx = fd.sfIdx;
+            sfLow = data->getCCScalarField(sfIdx);
+        }
+        else
+        {
+            ccScalarField::Shared sfHigh = data->getCCScalarField(fd.sfIdx);
+
+            // add scalar field to the base level with a suffix to avoid name clashes between levels
+            QString sfName = GetFeatureSFName(fd.f, fd.subOption);
+            sfName += QString(" (L%1)").arg(high);
+
+            sfIdx = dataLow->addField(sfName.toStdString());
+            if (sfIdx < 0)
+            {
+                ccLog::Warning(QString("Failed to add scalar field for feature '%1' at level %2").arg(sfName).arg(low));
+                return false;
+            }
+
+            sfLow = dataLow->getCCScalarField(sfIdx);
+            const std::vector<int32_t>& superIndex = getSuperIndex(high, low);
+
+            for (unsigned i = 0; i < dataLow->size(); ++i)
+            {
+                ScalarType value = sfHigh->getValue(superIndex[i]);
+                sfLow->setValue(i, value);
+            }
+        }
+
+        sfLow->computeMinAndMax();
+        dataLow->setCurrentDisplayedScalarField(sfIdx);
+    }
+
     return true;
 }
 

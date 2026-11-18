@@ -16,12 +16,14 @@
 //##########################################################################
 
 #include "qGAEDialog.h"
+#include "qGAEFeatures.h"
 
 //CCPluginAPI
 #include <ccMainAppInterface.h>
 
 //Qt
 #include <QMainWindow>
+#include <QPushButton>
 
 
 qGAEDialog::qGAEDialog( ccMainAppInterface* app )
@@ -30,8 +32,21 @@ qGAEDialog::qGAEDialog( ccMainAppInterface* app )
 	, m_app( app )
 {
 	setupUi( this );
-	
+
+	m_featureDialog = new qGAEFeatureDialog( this );
+	connect( featureMenuButton, &QPushButton::clicked, this, [this]() { m_featureDialog->exec(); } );
+
 	loadParamsFromPersistentSettings();
+}
+
+std::vector<Features::FeatureData> qGAEDialog::getSelectedFeatures() const
+{
+	return m_featureDialog->getSelectedFeatures();
+}
+
+int qGAEDialog::getFeatureLevel() const
+{
+	return m_featureDialog->getLevel();
 }
 
 int qGAEDialog::getResolution() const

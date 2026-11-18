@@ -18,6 +18,7 @@
 #pragma once
 
 #include "qGAELevel.h"
+#include "qGAEFeatures.h"
 
 
 //! Nested Acyclic Graph structure. In practise a list of Data objects of graphs
@@ -35,9 +36,11 @@ class NAG : public std::vector<Data*>
 
         int numLevels() const { return static_cast<int>(size()); }
 
-        bool setLevelFeatures(const ccLibAlgorithms::GeomCharacteristicWithSubOptionSet& selectedFeatures, int level);
+        bool setLevelFeatures(const std::vector<Features::FeatureData>& selectedFeatures, int level);
 
         bool computeLevelFeatures(int level, int subLevel = 0, const ccProgressDialog* pDlg = nullptr);
+
+        bool mapFeaturesToLowerLevel(int high, int low, const ccProgressDialog* pDlg = nullptr);
 
     private:
         std::vector<float> getSubSize(int high, int low = 0);

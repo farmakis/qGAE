@@ -1,6 +1,6 @@
 //##########################################################################
 //#                                                                        #
-//#                CLOUDCOMPARE PLUGIN: qGAE                              #
+//#                CLOUDCOMPARE PLUGIN: qGAE                               #
 //#                                                                        #
 //#  This program is free software; you can redistribute it and/or modify  #
 //#  it under the terms of the GNU General Public License as published by  #
@@ -17,20 +17,20 @@
 
 #pragma once
 
+// local
+#include "qGAEFeatures.h"
+
 // qCC_db
 #include <ccPointCloud.h>
 #include <ccScalarField.h>
+
 // system
 #include <cstdint>
 #include <vector>
 
-// CCCoreLib
-#include "GeometricalAnalysisTools.h"
-
 // Qt
 #include <QString>
 
-using GAT = CCCoreLib::GeometricalAnalysisTools;
 
 //! Represents graph using a point cloud to manage nodes and their features
 //! with additional properties for the edges
@@ -50,9 +50,13 @@ class Data : public ccPointCloud
         //! Whether the point memory was successfully reserved
         bool isValid() const { return m_valid; }
 
-        // bool computeFeatures(GAT::MultiGeomCharacteristicRequestSet requests);
+        //! Whethere has a sub index to the original points
+        bool hasSub() const { return !sub.empty() || m_subPtr != nullptr; }
 
         void linkToOriginalPoints(const ccPointCloud* cloud);
+
+        //! Returns the original (finer) point cloud this level was built from (if any)
+        const ccPointCloud* getOriginalCloud() const { return m_subPtr; }
 
         /** getter functions */ 
 
@@ -90,7 +94,7 @@ class Data : public ccPointCloud
         std::vector<int32_t> subPointer;  //points to the start of the cluster in the sub levels clusterList
 
         /* set of requests for computing features */
-        CCCoreLib::GeometricalAnalysisTools::MultiGeomCharacteristicRequestSet features;
+        std::vector<Features::FeatureData> features;
 };
 
 // class Segment : CCCoreLib::Neighboirhood
