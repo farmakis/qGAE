@@ -56,12 +56,25 @@
 
 using namespace PCP;
 
-int RES_FACTOR_NORMALS = 3; // resolution factor for normals computation 
+//! Forces the viewer to show the current scalar field of the voxel grid (level 0)
+static void RefreshVoxelLevelDisplay(qGAESession& session, ccMainAppInterface* app)
+{
+    if (!app || session.nag.empty())
+    {
+        return;
+    }
 
-bool qGAEProcess::Compute(const qGAEDialog& dlg,
+    Data* voxels = session.nag[0];
+    voxels->showSF(true);
+    voxels->colorsHaveChanged();                 // the SF colors (VBO) are outdated
+    voxels->prepareDisplayForRefresh_recursive(); // flags the window for refresh
+    app->updateUI();                              // properties panel (current SF, color scale)
+    app->refreshAll();                            // redraws the flagged windows
+}
+
+bool qGAEProcess::CreateVoxelGrid(const qGAEDialog& dlg,
+                                qGAESession& session,
                                 QString& errorMessage,
-                                ccPointCloud*& outputCloud,
-                                ccHObject*& outputGroup,
                                 bool allowDialogs,
                                 QWidget* parentWidget,
                                 ccMainAppInterface* app)
@@ -69,34 +82,13 @@ bool qGAEProcess::Compute(const qGAEDialog& dlg,
     //get the selected entities
     const ccHObject::Container& selectedEntities = app->getSelectedEntities();
 
-    //check if there is at least one point cloud in the selection
-    std::vector<ccPointCloud*> clouds;
-    for ( ccHObject* entity : selectedEntities )
+    //check if a valid point cloud has been selected
+    ccPointCloud* cloud = selectedEntities.empty() ? nullptr : ccHObjectCaster::ToPointCloud(selectedEntities[0]);
+    if ( !cloud )
     {
-        if ( entity && entity->isA( CC_TYPES::POINT_CLOUD ) )
-        {
-            clouds.push_back( ccHObjectCaster::ToPointCloud(entity) );
-        }
-    }
-
-    if ( clouds.empty() )
-    {
-        errorMessage = "No point cloud has been selected!";
+        errorMessage = "No valid point cloud has been selected!";
         return false;
     }
-
-    // get the parameters from the dialog
-    bool useRGB = false;
-
-    // per-level parameter lists (validated to be of the same length)
-    if (!dlg.validateLists(errorMessage))
-    {
-        return false;
-    }
-    
-    const std::vector<double> regularizationList        = dlg.getRegularization();
-    const std::vector<double> spatialWeightList         = dlg.getSpatialWeight();
-    const std::vector<int>    cutoffList                = dlg.getCutoff();
 
     ccProgressDialog pDlg(true, parentWidget);
     pDlg.setAutoClose(false);
@@ -107,109 +99,207 @@ bool qGAEProcess::Compute(const qGAEDialog& dlg,
     //Duration: initialization
 	QElapsedTimer voxelTimer;
 
-    for (ccPointCloud* cloud : clouds)
-	{
-        //Duration: volume computation
-        QElapsedTimer timer;
-        timer.start();
+    //Duration: volume computation
+    QElapsedTimer timer;
+    timer.start();
 
-        auto cloudName = cloud->getName();
+    auto cloudName = cloud->getName();
 
-        ccOctree::Shared theOctree = cloud->getOctree();
+    ccOctree::Shared theOctree = cloud->getOctree();
+    if (!theOctree)
+    {
+        theOctree = cloud->computeOctree(&pOctreeDlg);
         if (!theOctree)
         {
-            theOctree = cloud->computeOctree(&pOctreeDlg);
-            if (!theOctree)
-            {
-                app->dispToConsole(QObject::tr("[GAE] Couldn't compute octree for cloud '%1'!").arg(cloud->getName()), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
-                break;
-            }
-        }
-
-        size_t numLevels = regularizationList.size();        
-        NAG nag;
-
-        voxelTimer.start();
-
-        VoxelPartition voxelizer(dlg.getResolution(), dlg.getConnectivity());
-        Data* data = voxelizer.Process(cloud, errorMessage, &pDlg);
-        if (!data)
-        {
+            errorMessage = QObject::tr("Couldn't compute octree for cloud '%1'!").arg(cloud->getName());
             return false;
         }
-        if(!nag.addLevel(data))
-        {
-            errorMessage = "Failed to add level to NAG (SF memory allocation issue)";
-            return false;
-        }
+    }
+    
+    voxelTimer.start();
 
-        qint64 time_ms = voxelTimer.elapsed();
+    NAG nag;
+    VoxelPartition voxelizer(dlg.getResolution(), dlg.getConnectivity());
+    Data* data = voxelizer.Process(cloud, errorMessage, &pDlg);
+    if (!data)
+    {
+        return false;
+    }
+    if(!nag.addLevel(data))
+    {
+        delete data;
+        errorMessage = "Failed to add level to NAG (SF memory allocation issue)";
+        return false;
+    }
 
-        //Upadate display
-        cloud->setEnabled(false);
-        data->setName(QObject::tr("%1 (VoxelGrid at Octree level %2)").arg(cloud->getName()).arg(dlg.getResolution()));
-        data->showSF(true);
-        data->prepareDisplayForRefresh();
-        app->addToDB(data);
+    qint64 time_ms = voxelTimer.elapsed();
 
-        if (app)
-        {
-            app->dispToConsole(QObject::tr("[GAE] Created voxel grid at octree level %1: %2 s").arg(dlg.getResolution()).arg(time_ms / 1000.0, 0, 'f', 3),
-                ccMainAppInterface::STD_CONSOLE_MESSAGE);
-        }
- 
-        int projectLevel = 0;
-        PCP::Parameters params;
-        for (int level = 0; level < numLevels; ++level)
-        {
-            // some parallel cut pursuit params (Level-1 values; Level-2 values are set later)
-            params.regularization   = static_cast<float>(regularizationList[level]);
-            params.spatialWeight    = static_cast<float>(spatialWeightList[level]);
-            params.cutoff           = cutoffList[level];
+    //Upadate display
+    cloud->setEnabled(false);
+    data->setName(QObject::tr("%1 (VoxelGrid at Octree level %2)").arg(cloud->getName()).arg(dlg.getResolution()));
+    data->showSF(true);
+    data->prepareDisplayForRefresh();
+    app->addToDB(data);
 
-            // the iterative process starts here
-            if (!nag.setLevelFeatures(dlg.getSelectedFeatures(), level))
-            {
-                errorMessage = QString("Failed to set level features at level %1").arg(level);
-                return false;
-            }
-            if (!nag.computeLevelFeatures(level,  dlg.getFeatureLevel(), &pDlg))
-            {
-                errorMessage = QString("Failed to compute segment features at level %1").arg(level);
-                return false;
-            }
-            if (!nag.mapFeaturesToLowerLevel(level, projectLevel, &pDlg))
-            {
-                errorMessage = QString("Failed to map features from level %1 to level %2").arg(level).arg(projectLevel);
-                return false;
-            }
-            CutPursuitPartition partition(params);
-            Data* d1 = partition.Process(*nag[level], errorMessage, &pDlg);
-            if (!d1)
-            {
-                return false;
-            }
-            if(!nag.addLevel(d1))
-            {
-                errorMessage = "Failed to add level (SF memory allocation issue)";
-                return false;
-            }
-        
-            // handling display and output
-            data->addChild(d1);
-            d1->setName(QObject::tr("%1 (Graph Level %2)").arg(cloud->getName()).arg(level+1));
-            d1->showSF(true);
-            app->refreshAll();
+    if (app)
+    {
+        app->dispToConsole(QObject::tr("[GAE] Created voxel grid at octree level %1: %2 s").arg(dlg.getResolution()).arg(time_ms / 1000.0, 0, 'f', 3),
+            ccMainAppInterface::STD_CONSOLE_MESSAGE);
+    }
 
-            // //we display computation timing only if no error occurred!
-            // if (app)
-            // {
-            //     app->dispToConsole(QObject::tr("[GAE] Created %1 segments in cloud '%2': %3 s").arg(d1->numNodes()).arg(cloudName).arg(time_ms / 1000.0, 0, 'f', 3),
-            //         ccMainAppInterface::STD_CONSOLE_MESSAGE);
-            //     app->dispToConsole(QObject::tr("[GAE] Created %1 segments in cloud '%2': %3 s").arg(d2->numNodes()).arg(cloudName).arg(time_ms / 1000.0, 0, 'f', 3),
-            //         ccMainAppInterface::STD_CONSOLE_MESSAGE);
-            // }
-        }
+    session.cloud   = cloud;
+    session.cloudId = cloud->getUniqueID();
+    session.voxelId = data->getUniqueID();
+    session.lastId  = data->getUniqueID();
+    session.nag     = std::move(nag);
+
+    return true;
+}
+
+bool qGAEProcess::ComputeFeatures(const qGAEDialog& dlg,
+                                qGAESession& session,
+                                QString& errorMessage,
+                                bool allowDialogs,
+                                QWidget* parentWidget,
+                                ccMainAppInterface* app)
+{
+    if (!session.isActive())
+    {
+        errorMessage = "No graph available: create a level first";
+        return false;
+    }
+
+    // the levels live in the DB: make sure the user didn't delete them
+    ccHObject* root = app->dbRootObject();
+    if (!root || !root->find(session.cloudId) || !root->find(session.voxelId) || !root->find(session.lastId))
+    {
+        session.reset();
+        errorMessage = "The voxel grid or a level was removed from the DB: please start over";
+        return false;
+    }
+    ccPointCloud* cloud = session.cloud;
+
+    ccProgressDialog pDlg(true, parentWidget);
+    pDlg.setAutoClose(false);
+
+    //Duration: features computation
+    QElapsedTimer featuresTimer;
+    featuresTimer.start();
+
+    int level = session.nag.numLevels() - 1;
+    int projectLevel = 0;
+    if (dlg.getFeatureLevel() > level - 1)
+    {
+        errorMessage = QString("Feature level must be at most %1").arg(level - 1);
+        return false;
+    }
+    if (!session.nag.setLevelFeatures(dlg.getSelectedFeatures(), level))
+    {
+        errorMessage = QString("Failed to set level features at level %1").arg(level);
+        return false;
+    }
+    if (!session.nag.computeLevelFeatures(level,  dlg.getFeatureLevel(), &pDlg))
+    {
+        errorMessage = QString("Failed to compute segment features at level %1").arg(level);
+        return false;
+    }
+    if (!session.nag.mapFeaturesToLowerLevel(level, projectLevel, &pDlg))
+    {
+        errorMessage = QString("Failed to map features from level %1 to level %2").arg(level).arg(projectLevel);
+        return false;
+    }
+
+    qint64 time_ms = featuresTimer.elapsed();
+    session.featuresLevel = level;
+    RefreshVoxelLevelDisplay(session, app);
+
+    //we display computation timing only if no error occurred!
+    if (app)
+    {
+        app->dispToConsole(QObject::tr("[GAE] Computed level %1 features: %2 s").arg(level+1).arg(time_ms / 1000.0, 0, 'f', 3),
+            ccMainAppInterface::STD_CONSOLE_MESSAGE);
+    }
+
+    return true;
+}
+
+bool qGAEProcess::RunPartition(const qGAEDialog& dlg,
+                                qGAESession& session,
+                                QString& errorMessage,
+                                bool allowDialogs,
+                                QWidget* parentWidget,
+                                ccMainAppInterface* app)
+{
+    if (!session.isActive())
+    {
+        errorMessage = "No graph available: create a level first";
+        return false;
+    }
+
+    // the levels live in the DB: make sure the user didn't delete them
+    ccHObject* root = app->dbRootObject();
+    if (!root || !root->find(session.cloudId) || !root->find(session.voxelId) || !root->find(session.lastId))
+    {
+        session.reset();
+        errorMessage = "The voxel grid or a level was removed from the DB: please start over";
+        return false;
+    }
+    ccPointCloud* cloud = session.cloud;
+
+    if (session.featuresLevel != session.nag.numLevels() - 1)
+    {
+        errorMessage = "Features of the current level have not been computed yet";
+        return false;
+    }
+
+    // get the parameters from the dialog
+    const double regularization = dlg.getRegularization();
+    const double spatialWeight  = dlg.getSpatialWeight();
+    const int    cutoff         = dlg.getCutoff();
+
+    ccProgressDialog pDlg(true, parentWidget);
+    pDlg.setAutoClose(false);
+
+    //Duration: volume computation
+    QElapsedTimer partitionTimer;
+    partitionTimer.start();
+
+    auto cloudName = cloud->getName();
+    
+    int level = session.nag.numLevels() - 1;
+    PCP::Parameters params;
+    params.regularization   = static_cast<float>(regularization);
+    params.spatialWeight    = static_cast<float>(spatialWeight);
+    params.cutoff           = cutoff;
+
+    // the process starts here
+    CutPursuitPartition partition(params);
+    Data* data = partition.Process(*session.nag[level], errorMessage, &pDlg);
+    if (!data)
+    {
+        return false;
+    }
+    if(!session.nag.addLevel(data))
+    {
+        delete data;
+        errorMessage = "Failed to add level (SF memory allocation issue)";
+        return false;
+    }
+
+    qint64 time_ms = partitionTimer.elapsed();
+
+    // handling display and output
+    session.nag[level]->addChild(data);
+    session.lastId = data->getUniqueID();
+    data->setName(QObject::tr("%1 (Graph Level %2)").arg(cloud->getName()).arg(level+1));
+    data->showSF(true);
+    RefreshVoxelLevelDisplay(session, app);
+
+    //we display computation timing only if no error occurred!
+    if (app)
+    {
+        app->dispToConsole(QObject::tr("[GAE] Created level %1 with '%2' segments in cloud: %3 s").arg(level+1).arg(data->numNodes()).arg(time_ms / 1000.0, 0, 'f', 3),
+            ccMainAppInterface::STD_CONSOLE_MESSAGE);
     }
     
     return true;

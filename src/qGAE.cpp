@@ -37,7 +37,8 @@ void qGAE::onNewSelection( const ccHObject::Container& selectedEntities )
 	}
 
 	// enable the action only if at least one entity is selected
-	m_action->setEnabled( !selectedEntities.empty() );
+	m_action->setEnabled( selectedEntities.size() == 1 
+						&& selectedEntities[0]->isA(CC_TYPES::POINT_CLOUD) );
 }
 
 QList<QAction*> qGAE::getActions()
@@ -62,27 +63,78 @@ void qGAE::doAction()
 		return;
 	}
 
-	qGAEDialog dlg( m_app );
-	if ( !dlg.exec() )
+	if ( !m_dlg )
 	{
-		return;
+		m_dlg = new qGAEDialog( m_app );
+		connect( m_dlg, &qGAEDialog::voxelRequested, this, &qGAE::onCreateVoxelGrid );
+		connect( m_dlg, &qGAEDialog::featuresRequested, this, &qGAE::onComputeFeatures );
+		connect( m_dlg, &qGAEDialog::runRequested,   this, &qGAE::onRunPartition );
+		connect( m_dlg, &qGAEDialog::resetRequested, this, &qGAE::onReset );
+		connect( m_dlg, &QDialog::finished, this, [this]() { m_dlg->saveParamsToPersistentSettings(); } );
 	}
 
-    QString errorMessage;
-	ccPointCloud* outputCloud = nullptr; //only necessary for the command line version in fact
-	ccHObject* outputGroup = nullptr; //only necessary for the command line version in fact
-    if (!qGAEProcess::Compute(dlg, errorMessage, outputCloud, outputGroup, true, m_app->getMainWindow(), m_app))
+	m_dlg->setSessionActive( m_session.isActive() );
+
+	// non-modal: the 3D view stays usable between two runs
+	m_dlg->show();
+	m_dlg->raise();
+	m_dlg->activateWindow();
+}
+
+void qGAE::onCreateVoxelGrid()
+{
+	QString errorMessage;
+	m_dlg->setEnabled( false ); // no re-entrancy while processing
+	if  (!qGAEProcess::CreateVoxelGrid( *m_dlg, m_session, errorMessage, true, m_app->getMainWindow(), m_app ))
 	{
-		if (!errorMessage.isEmpty())
-		{
-			m_app->dispToConsole(errorMessage, ccMainAppInterface::WRN_CONSOLE_MESSAGE);
-		}
-		else
-		{
-			m_app->dispToConsole("[GAE] Completed!", ccMainAppInterface::STD_CONSOLE_MESSAGE);
-		}	
+		m_app->dispToConsole( errorMessage.isEmpty() ? QStringLiteral( "[GAE] Voxel grid creation failed" ) : errorMessage,
+		                      ccMainAppInterface::ERR_CONSOLE_MESSAGE );
 	}
 
-	//'Compute' may change some parameters of the dialog
-	dlg.saveParamsToPersistentSettings();
+	m_dlg->setEnabled( true );
+	m_dlg->setSessionActive( m_session.isActive() );
+	updateFeatureLevelLimit();
+}
+
+void qGAE::onComputeFeatures()
+{
+	QString errorMessage;
+	m_dlg->setEnabled( false );
+	if (!qGAEProcess::ComputeFeatures( *m_dlg, m_session, errorMessage, true, m_app->getMainWindow(), m_app ))
+	{
+		m_app->dispToConsole( errorMessage.isEmpty() ? QStringLiteral( "[GAE] Features computation failed" ) : errorMessage,
+		                      ccMainAppInterface::ERR_CONSOLE_MESSAGE );
+	}
+
+	m_dlg->setEnabled( true );
+	m_dlg->setSessionActive( m_session.isActive() );
+}
+
+void qGAE::onRunPartition()
+{
+	QString errorMessage;
+	m_dlg->setEnabled( false );
+	if (!qGAEProcess::RunPartition( *m_dlg, m_session, errorMessage, true, m_app->getMainWindow(), m_app ))
+	{
+		m_app->dispToConsole( errorMessage.isEmpty() ? QStringLiteral( "[GAE] Partition failed" ) : errorMessage,
+		                      ccMainAppInterface::ERR_CONSOLE_MESSAGE );
+	}
+
+	m_dlg->setEnabled( true );
+	m_dlg->setSessionActive( m_session.isActive() );
+	updateFeatureLevelLimit();
+}
+
+void qGAE::onReset()
+{
+	// the levels stay in the DB, we only forget them
+	m_session.reset();
+	m_dlg->setSessionActive( false );
+	updateFeatureLevelLimit();
+}
+
+void qGAE::updateFeatureLevelLimit()
+{
+	// features of the last level can only be computed from lower levels
+	m_dlg->setMaxFeatureLevel( m_session.nag.numLevels() - 2 );
 }

@@ -123,6 +123,12 @@ void qGAEFeatureDialog::setLevel(int level)
 	levelSpinBox->setValue(level);
 }
 
+void qGAEFeatureDialog::setMaxLevel(int maxLevel)
+{
+	// QSpinBox clamps the current value automatically
+	levelSpinBox->setMaximum(std::max(maxLevel, levelSpinBox->minimum()));
+}
+
 void qGAEFeatureDialog::reset()
 {
 	for (const Option& opt : m_options)

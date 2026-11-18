@@ -19,6 +19,9 @@
 
 #include "ccStdPluginInterface.h"
 
+#include "qGAEDialog.h"
+#include "qGAEProcess.h"
+
 //! GAE plugin
 /** Graph Analysis Engine: Point cloud analysis as a multi-level graph.
 **/
@@ -39,7 +42,16 @@ public:
 
 private:
 	void doAction();
+	void onCreateVoxelGrid();
+	void onComputeFeatures();
+	void onRunPartition();
+	void onReset();
+	void updateFeatureLevelLimit();
 
 	//! Default action
 	QAction* m_action;
+	//! Non-modal dialog (kept alive between runs)
+	qGAEDialog* m_dlg = nullptr;
+	//! State shared between hierarchical abstractions
+	qGAESession m_session;
 };

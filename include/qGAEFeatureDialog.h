@@ -46,6 +46,8 @@ class qGAEFeatureDialog : public QDialog
 	int getLevel() const;
 	//! Sets the level
 	void setLevel(int level);
+	//! Sets the maximum selectable level (the current value is clamped)
+	void setMaxLevel(int maxLevel);
 
 	//! Reset the whole dialog
 	void reset();

@@ -40,21 +40,29 @@ public:
 	int getResolution() const;
 	//! Voxel graph connectivity (6, 14 or 26)
 	int getConnectivity() const;
-	//! Per-level parameter lists (comma-separated in the dialog)
-	std::vector<double> getRegularization() const;
-	std::vector<double> getSpatialWeight() const;
-	std::vector<int>    getCutoff() const;
+	//! Partition parameters (for the next level)
+	double getRegularization() const;
+	double getSpatialWeight() const;
+	int    getCutoff() const;
 
-	//! Checks that the three lists are valid and of the same length (returns the error otherwise)
-	bool validateLists(QString& error) const;
+	//! Enables/disables the buttons according to the session state
+	void setSessionActive( bool active );
 
 	//! Features selected in the feature dialog
 	std::vector<Features::FeatureData> getSelectedFeatures() const;
 	//! Level at which the features are computed
 	int getFeatureLevel() const;
+	//! Restricts the feature level (must be below the level being processed)
+	void setMaxFeatureLevel( int maxLevel );
 
 	void loadParamsFromPersistentSettings();
 	void saveParamsToPersistentSettings();
+
+Q_SIGNALS:
+	void voxelRequested();
+	void featuresRequested();
+	void runRequested();
+	void resetRequested();
 
 private:
 	ccMainAppInterface* m_app;
