@@ -21,6 +21,7 @@
 
 #include "qGAEFeatures.h"
 #include "qGAEFeatureDialog.h"
+#include "qGAEVoxelDialog.h"
 
 //Qt
 #include <QSettings>
@@ -67,4 +68,5 @@ Q_SIGNALS:
 private:
 	ccMainAppInterface* m_app;
 	qGAEFeatureDialog*  m_featureDialog;
+	qGAEVoxelDialog*  m_voxelDialog;
 };

@@ -33,8 +33,16 @@ qGAEDialog::qGAEDialog( ccMainAppInterface* app )
 {
 	setupUi( this );
 
+	m_voxelDialog = new qGAEVoxelDialog( this );
+	connect( voxelButton, &QPushButton::clicked, this, [this]()
+	{
+		if ( m_voxelDialog->exec() == QDialog::Accepted )
+		{
+			Q_EMIT voxelRequested(); 
+		}
+	});
+
 	m_featureDialog = new qGAEFeatureDialog( this );
-	connect( voxelButton, &QPushButton::clicked, this, &qGAEDialog::voxelRequested );
 	connect( featureButton, &QPushButton::clicked, this, [this]()
 	{
 		if ( m_featureDialog->exec() == QDialog::Accepted && !m_featureDialog->getSelectedFeatures().empty() )
@@ -65,12 +73,12 @@ void qGAEDialog::setMaxFeatureLevel(int maxLevel)
 
 int qGAEDialog::getResolution() const
 {
-	return intSpinBoxResolution->value();
+	return m_voxelDialog->getResolution();
 }
 
 int qGAEDialog::getConnectivity() const
 {
-	return comboBoxConnectivity->currentText().toInt();
+	return m_voxelDialog->getConnectivity();
 }
 
 double qGAEDialog::getRegularization() const
@@ -92,8 +100,6 @@ void qGAEDialog::setSessionActive(bool active)
 {
 	// resolution/connectivity only matter when (re)creating the voxel grid
 	voxelButton->setEnabled(!active);
-	intSpinBoxResolution->setEnabled(!active);
-	comboBoxConnectivity->setEnabled(!active);
 	runButton->setEnabled(active);
 	featureButton->setEnabled(active);
 	undoButton->setEnabled(active);
@@ -104,13 +110,13 @@ void qGAEDialog::loadParamsFromPersistentSettings()
 	QSettings settings("qGAE");
 
 	//read parameters
-	int resolution 		  = settings.value("Resolution", intSpinBoxResolution->value()).toInt();
+	// int resolution 		  = settings.value("Resolution", intSpinBoxResolution->value()).toInt();
 	double regularization = settings.value("Regularization", doubleSpinBoxRegularization->value()).toDouble();
 	double spatialWeight  = settings.value("SpatialWeight", doubleSpinBoxSpatialWeight->value()).toDouble();
 	int cutoff            = settings.value("Cutoff", intSpinBoxCutoff->value()).toInt();
 
 	//apply parameters
-	intSpinBoxResolution->setValue(resolution);
+	// intSpinBoxResolution->setValue(resolution);
 	doubleSpinBoxRegularization->setValue(regularization);
 	doubleSpinBoxSpatialWeight->setValue(spatialWeight);
 	intSpinBoxCutoff->setValue(cutoff);
@@ -120,7 +126,7 @@ void qGAEDialog::saveParamsToPersistentSettings()
 {
 	QSettings settings("qGAE");
 	//save parameters
-	settings.setValue("Resolution", intSpinBoxResolution->value());
+	// settings.setValue("Resolution", intSpinBoxResolution->value());
 	settings.setValue("Regularization", doubleSpinBoxRegularization->value());
 	settings.setValue("SpatialWeight", doubleSpinBoxSpatialWeight->value());
 	settings.setValue("Cutoff", intSpinBoxCutoff->value());

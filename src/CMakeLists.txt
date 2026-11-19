@@ -9,6 +9,7 @@ target_sources( ${PROJECT_NAME}
 		${CMAKE_CURRENT_LIST_DIR}/qGAELevel.cpp
 		${CMAKE_CURRENT_LIST_DIR}/qGAEPartition.cpp
 		${CMAKE_CURRENT_LIST_DIR}/qGAEProcess.cpp
+		${CMAKE_CURRENT_LIST_DIR}/qGAEVoxelDialog.cpp
 )
 
 target_include_directories( ${PROJECT_NAME}
