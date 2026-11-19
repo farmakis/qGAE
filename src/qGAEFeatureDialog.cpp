@@ -19,9 +19,11 @@
 
 // qCC_db
 #include <ccLog.h>
+#include <ccLibAlgorithms.h>
 
 // CCCoreLib
 #include <Neighbourhood.h>
+#include <GeometricalAnalysisTools.h>
 
 // Qt
 #include <QDialogButtonBox>
@@ -41,26 +43,26 @@ qGAEFeatureDialog::qGAEFeatureDialog(QWidget* parent /*=nullptr*/)
 
 	try
 	{
-		// addOption(Option(densityCheckBox, Features::Feature::Density, 0));
-		addOption(Option(eigSumCheckBox, Features::Feature::Eigen, CCCoreLib::Neighbourhood::GeomFeature::EigenValuesSum));
-		addOption(Option(eigOmnivarianceCheckBox, Features::Feature::Eigen, CCCoreLib::Neighbourhood::GeomFeature::Omnivariance));
-		addOption(Option(eigenentropyCheckBox, Features::Feature::Eigen, CCCoreLib::Neighbourhood::GeomFeature::EigenEntropy));
-		addOption(Option(eigAnisotropyCheckBox, Features::Feature::Eigen, CCCoreLib::Neighbourhood::GeomFeature::Anisotropy));
-		addOption(Option(eigPlanarityCheckBox, Features::Feature::Eigen, CCCoreLib::Neighbourhood::GeomFeature::Planarity));
-		addOption(Option(eigLinearityCheckBox, Features::Feature::Eigen, CCCoreLib::Neighbourhood::GeomFeature::Linearity));
-		addOption(Option(eigPCA1CheckBox, Features::Feature::Eigen, CCCoreLib::Neighbourhood::GeomFeature::PCA1));
-		addOption(Option(eigPCA2CheckBox, Features::Feature::Eigen, CCCoreLib::Neighbourhood::GeomFeature::PCA2));
-		addOption(Option(eigSurfaceVarCheckBox, Features::Feature::Eigen, CCCoreLib::Neighbourhood::GeomFeature::SurfaceVariation));
-		addOption(Option(eigSphericityCheckBox, Features::Feature::Eigen, CCCoreLib::Neighbourhood::GeomFeature::Sphericity));
-		addOption(Option(eigVerticalityCheckBox, Features::Feature::Eigen, CCCoreLib::Neighbourhood::GeomFeature::Verticality));
-		addOption(Option(eigenvalue1CheckBox, Features::Feature::Eigen, CCCoreLib::Neighbourhood::GeomFeature::EigenValue1));
-		addOption(Option(eigenvalue2CheckBox, Features::Feature::Eigen, CCCoreLib::Neighbourhood::GeomFeature::EigenValue2));
-		addOption(Option(eigenvalue3CheckBox, Features::Feature::Eigen, CCCoreLib::Neighbourhood::GeomFeature::EigenValue3));
-		addOption(Option(degreeOfPlanarityCheckBox, Features::Feature::Eigen, CCCoreLib::Neighbourhood::GeomFeature::DegreeOfPlanarity));
-		addOption(Option(degreeOfLinearityCheckBox, Features::Feature::Eigen, CCCoreLib::Neighbourhood::GeomFeature::DegreeOfLinearity));
-		addOption(Option(normalXCheckBox, Features::Feature::Normal, Features::NormalAxis::Nx));
-		addOption(Option(normalYCheckBox, Features::Feature::Normal, Features::NormalAxis::Ny));
-		addOption(Option(normalZCheckBox, Features::Feature::Normal, Features::NormalAxis::Nz));
+		// addOption(Option(densityCheckBox, CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic::LocalDensity, 0));
+		addOption(Option(eigSumCheckBox, CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic::Feature, CCCoreLib::Neighbourhood::GeomFeature::EigenValuesSum));
+		addOption(Option(eigOmnivarianceCheckBox, CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic::Feature, CCCoreLib::Neighbourhood::GeomFeature::Omnivariance));
+		addOption(Option(eigenentropyCheckBox, CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic::Feature, CCCoreLib::Neighbourhood::GeomFeature::EigenEntropy));
+		addOption(Option(eigAnisotropyCheckBox, CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic::Feature, CCCoreLib::Neighbourhood::GeomFeature::Anisotropy));
+		addOption(Option(eigPlanarityCheckBox, CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic::Feature, CCCoreLib::Neighbourhood::GeomFeature::Planarity));
+		addOption(Option(eigLinearityCheckBox, CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic::Feature, CCCoreLib::Neighbourhood::GeomFeature::Linearity));
+		addOption(Option(eigPCA1CheckBox, CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic::Feature, CCCoreLib::Neighbourhood::GeomFeature::PCA1));
+		addOption(Option(eigPCA2CheckBox, CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic::Feature, CCCoreLib::Neighbourhood::GeomFeature::PCA2));
+		addOption(Option(eigSurfaceVarCheckBox, CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic::Feature, CCCoreLib::Neighbourhood::GeomFeature::SurfaceVariation));
+		addOption(Option(eigSphericityCheckBox, CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic::Feature, CCCoreLib::Neighbourhood::GeomFeature::Sphericity));
+		addOption(Option(eigVerticalityCheckBox, CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic::Feature, CCCoreLib::Neighbourhood::GeomFeature::Verticality));
+		addOption(Option(eigenvalue1CheckBox, CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic::Feature, CCCoreLib::Neighbourhood::GeomFeature::EigenValue1));
+		addOption(Option(eigenvalue2CheckBox, CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic::Feature, CCCoreLib::Neighbourhood::GeomFeature::EigenValue2));
+		addOption(Option(eigenvalue3CheckBox, CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic::Feature, CCCoreLib::Neighbourhood::GeomFeature::EigenValue3));
+		addOption(Option(degreeOfPlanarityCheckBox, CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic::Feature, CCCoreLib::Neighbourhood::GeomFeature::DegreeOfPlanarity));
+		addOption(Option(degreeOfLinearityCheckBox, CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic::Feature, CCCoreLib::Neighbourhood::GeomFeature::DegreeOfLinearity));
+		addOption(Option(normalXCheckBox, CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic::Normal, CCCoreLib::Neighbourhood::NormalComponent::NormalX));
+		addOption(Option(normalYCheckBox, CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic::Normal, CCCoreLib::Neighbourhood::NormalComponent::NormalY));
+		addOption(Option(normalZCheckBox, CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic::Normal, CCCoreLib::Neighbourhood::NormalComponent::NormalZ));
 	}
 	catch (const std::bad_alloc&)
 	{
@@ -85,11 +87,11 @@ void qGAEFeatureDialog::addOption(const Option& option)
 	m_options.push_back(option);
 }
 
-void qGAEFeatureDialog::setSelectedFeatures(const std::vector<Features::FeatureData>& features)
+void qGAEFeatureDialog::setSelectedFeatures(const ccLibAlgorithms::GeomCharacteristicWithSubOptionSet& features)
 {
 	reset();
 
-	for (Features::FeatureData f : features)
+	for (const ccLibAlgorithms::GeomCharacteristicWithSubOption f : features)
 	{
 		auto it = std::find(m_options.begin(), m_options.end(), Option(nullptr, f));
 		if (it != m_options.end())
@@ -99,15 +101,15 @@ void qGAEFeatureDialog::setSelectedFeatures(const std::vector<Features::FeatureD
 	}
 }
 
-std::vector<Features::FeatureData> qGAEFeatureDialog::getSelectedFeatures() const
+ccLibAlgorithms::GeomCharacteristicWithSubOptionSet qGAEFeatureDialog::getSelectedFeatures() const
 {
-	std::vector<Features::FeatureData> features;
+	ccLibAlgorithms::GeomCharacteristicWithSubOptionSet features;
 	for (const Option& opt : m_options)
 	{
 		assert(opt.checkBox);
         if (opt.checkBox && opt.checkBox->isChecked())
 		{
-			features.push_back(opt.ft);
+			features.push_back(opt.gc);
 		}
 	}
 	return features;

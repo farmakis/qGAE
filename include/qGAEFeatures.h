@@ -20,33 +20,10 @@
 // Qt
 #include <QString>
 
+// CCCoreLib
+#include <Neighbourhood.h>
+#include <GeometricalAnalysisTools.h>
+
 class ccScalarField;
-class Features
-{
-public:
 
-    enum Feature	{	Eigen,
-                        Density, 
-                        Normal
-                    };
-
-    enum NormalAxis {   Nx = 1,
-                        Ny,
-                        Nz
-                    };
-
-    struct FeatureData
-    {
-        Feature f;
-        int subOption = 0;
-        ccScalarField* sf = nullptr;
-        int sfIdx = -1;
-
-        bool operator==(const FeatureData& other) const	
-        {		
-            return f == other.f && subOption == other.subOption;	
-        }
-    };
-};
-
-QString GetFeatureSFName(Features::Feature feature, int subOption);
+QString GetFeatureSFName(CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic feature, int subOption);

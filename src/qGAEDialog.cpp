@@ -43,7 +43,7 @@ qGAEDialog::qGAEDialog( ccMainAppInterface* app )
 	loadParamsFromPersistentSettings();
 }
 
-std::vector<Features::FeatureData> qGAEDialog::getSelectedFeatures() const
+GeomCharacteristicWithSubOptionSet qGAEDialog::getSelectedFeatures() const
 {
 	return m_featureDialog->getSelectedFeatures();
 }

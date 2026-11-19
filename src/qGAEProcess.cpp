@@ -188,9 +188,9 @@ bool qGAEProcess::ComputeFeatures(const qGAEDialog& dlg,
 
     int level = session.nag.numLevels() - 1;
     int projectLevel = 0;
-    if (dlg.getFeatureLevel() > level - 1)
+    if (dlg.getFeatureLevel() > level)
     {
-        errorMessage = QString("Feature level must be at most %1").arg(level - 1);
+        errorMessage = QString("Feature level must be at most %1").arg(level);
         return false;
     }
     if (!session.nag.setLevelFeatures(dlg.getSelectedFeatures(), level))

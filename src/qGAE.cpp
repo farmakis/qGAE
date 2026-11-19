@@ -135,6 +135,6 @@ void qGAE::onReset()
 
 void qGAE::updateFeatureLevelLimit()
 {
-	// features of the last level can only be computed from lower levels
-	m_dlg->setMaxFeatureLevel( m_session.nag.numLevels() - 2 );
+	// features of the last level can only be computed from the same or lower levels
+	m_dlg->setMaxFeatureLevel( m_session.nag.numLevels() - 1 );
 }

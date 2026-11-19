@@ -36,7 +36,7 @@ class NAG : public std::vector<Data*>
 
         int numLevels() const { return static_cast<int>(size()); }
 
-        bool setLevelFeatures(const std::vector<Features::FeatureData>& selectedFeatures, int level);
+        bool setLevelFeatures(const CCCoreLib::GeometricalAnalysisTools::MultiGeomCharacteristicRequestSet& selectedFeatures, int level);
 
         bool computeLevelFeatures(int level, int subLevel = 0, const ccProgressDialog* pDlg = nullptr);
 

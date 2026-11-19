@@ -22,6 +22,9 @@
 // Ui
 #include <ui_qGAEFeatureDialog.h>
 
+// qCC_db
+#include "ccLibAlgorithms.h"
+
 // Qt
 #include <QDialog>
 
@@ -38,9 +41,9 @@ class qGAEFeatureDialog : public QDialog
 	//! Default constructor
 	explicit qGAEFeatureDialog(QWidget* parent = nullptr);
 	//! Sets selected features
-	void setSelectedFeatures(const std::vector<Features::FeatureData>& features);
+	void setSelectedFeatures(const ccLibAlgorithms::GeomCharacteristicWithSubOptionSet& features);
 	//! Returns selected features
-	std::vector<Features::FeatureData> getSelectedFeatures() const;
+	ccLibAlgorithms::GeomCharacteristicWithSubOptionSet getSelectedFeatures() const;
 
 	//! Returns	the level at which the features will be computed
 	int getLevel() const;
@@ -56,26 +59,21 @@ class qGAEFeatureDialog : public QDialog
 	//! Composite structure for a geometric characteristic option and its corresponding checkbox
 	struct Option
 	{
-		Option(QCheckBox* cb, Features::Feature f, int option)
-		    : checkBox(cb)
-		    , ft{f, option, nullptr, -1}
-		{
-		}
-
-		Option(QCheckBox* cb, const Features::FeatureData& featureData)
-		    : checkBox(cb)
-		    , ft(featureData)
+		//! Default constructor
+		Option(QCheckBox* cb = nullptr, CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic c = CCCoreLib::GeometricalAnalysisTools::Feature, int option = 0)
+		    : gc(c, option)
+		    , checkBox(cb)
 		{
 		}
 
 		//! Equality operator
 		bool operator==(const Option& other) const
 		{
-			return ft == other.ft;
+			return gc == other.gc;
 		}
 
-		QCheckBox*              checkBox = nullptr; //!< Corresponding checkbox
-		Features::FeatureData   ft;                 //!< GAE feature (with sub option)
+		ccLibAlgorithms::GeomCharacteristicWithSubOption gc;                 //!< Geometric characteristic (with sub option)
+		QCheckBox*                                       checkBox = nullptr; //!< Corresponding checkbox         
 	};
 
 	//! Add option

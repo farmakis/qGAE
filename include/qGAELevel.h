@@ -94,7 +94,9 @@ class Data : public ccPointCloud
         std::vector<int32_t> subPointer;  //points to the start of the cluster in the sub levels clusterList
 
         /* set of requests for computing features */
-        std::vector<Features::FeatureData> features;
+        CCCoreLib::GeometricalAnalysisTools::MultiGeomCharacteristicRequestSet features;
+
+        PointCoordinateType voxelSize;
 };
 
 // class Segment : CCCoreLib::Neighboirhood

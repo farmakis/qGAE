@@ -67,6 +67,7 @@ Data* VoxelPartition::Process(ccPointCloud* cloud, QString& errorMessage, CCCore
         return nullptr;
     }
     data->linkToOriginalPoints(cloud);
+    data->voxelSize = theOctree->getCellSize(m_octreeLevel);
 
     // get cell xyz at the given octree level
     std::vector<CCVector3> pos(cellsNumber);
@@ -103,7 +104,7 @@ Data* VoxelPartition::Process(ccPointCloud* cloud, QString& errorMessage, CCCore
         dataOctree = data->computeOctree(progressCb);
         if (!dataOctree)
         {
-            errorMessage = QObject::tr("[GAE] Couldn't compute octree for Level-0 data '%1'!").arg(cloud->getName());
+            errorMessage = QObject::tr("[GAE] Couldn't compute octree for Level 0 data '%1'!").arg(cloud->getName());
             delete data;
             return nullptr;
         }
@@ -111,8 +112,7 @@ Data* VoxelPartition::Process(ccPointCloud* cloud, QString& errorMessage, CCCore
 
     // instantiate the graph and compute edges
 	PCP::Graph G(static_cast<int32_t>(data->size()), data, dataOctree.data());
-    PointCoordinateType voxelSize = theOctree->getCellSize(m_octreeLevel);
-	G.computeEdges(m_connectivity, static_cast<float>(voxelSize), progressCb);
+	G.computeEdges(m_connectivity, static_cast<float>(data->voxelSize), progressCb);
     data->edges = G.getEdgeList();
     data->edgeAttr = G.getEdgeWeights();
     data->nodeSize.resize(data->size(), 1.0f); // initialize node sizes to 1.0

@@ -22,16 +22,17 @@
 
 // CCCoreLib
 #include <Neighbourhood.h>
+#include <GeometricalAnalysisTools.h>
 
 
-QString GetFeatureSFName(Features::Feature feature, int subOption)
+QString GetFeatureSFName(CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic feature, int subOption)
 {
     // generate the right SF name
     QString sfName;
 
     switch (feature)
     {
-    case Features::Feature::Eigen:
+    case CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic::Feature:
     {
         switch (subOption)
         {
@@ -90,18 +91,18 @@ QString GetFeatureSFName(Features::Feature feature, int subOption)
     }
     break;
 
-    case Features::Feature::Normal:
+    case CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic::Normal:
     {
         switch (subOption)
         {
-        case Features::NormalAxis::Nx:
-            sfName = "Normal X";
+        case CCCoreLib::Neighbourhood::NormalComponent::NormalX:
+            sfName = "Nx";
             break;
-        case Features::NormalAxis::Ny:
-            sfName = "Normal Y";
+        case CCCoreLib::Neighbourhood::NormalComponent::NormalY:
+            sfName = "Ny";
             break;
-        case Features::NormalAxis::Nz:
-            sfName = "Normal Z";
+        case CCCoreLib::Neighbourhood::NormalComponent::NormalZ:
+            sfName = "Nz";
             break;
         default:
             assert(false);
@@ -110,7 +111,7 @@ QString GetFeatureSFName(Features::Feature feature, int subOption)
     }
     break;
 
-    case Features::Feature::Density:
+    case CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic::LocalDensity:
         sfName = "Density";
         break;
 

@@ -1,6 +1,6 @@
 //##########################################################################
 //#                                                                        #
-//#                CLOUDCOMPARE PLUGIN: qGAE                              #
+//#                CLOUDCOMPARE PLUGIN: qGAE                               #
 //#                                                                        #
 //#  This program is free software; you can redistribute it and/or modify  #
 //#  it under the terms of the GNU General Public License as published by  #
@@ -49,7 +49,7 @@ public:
 	void setSessionActive( bool active );
 
 	//! Features selected in the feature dialog
-	std::vector<Features::FeatureData> getSelectedFeatures() const;
+	CCCoreLib::GeometricalAnalysisTools::MultiGeomCharacteristicRequestSet getSelectedFeatures() const;
 	//! Level at which the features are computed
 	int getFeatureLevel() const;
 	//! Restricts the feature level (must be below the level being processed)

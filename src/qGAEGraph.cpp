@@ -27,6 +27,9 @@
 #include <GeometricalAnalysisTools.h>
 #include <DgmOctreeReferenceCloud.h>
 
+// qCC_db
+#include <ccProgressDialog.h>
+
 using namespace CCCoreLib;
 using GAT = CCCoreLib::GeometricalAnalysisTools;
 
@@ -64,7 +67,7 @@ std::vector<int32_t> NAG::getSuperIndex(int high, int low)
     return superIndex;
 }
 
-bool NAG::setLevelFeatures(const std::vector<Features::FeatureData>& selectedFeatures, int level)
+bool NAG::setLevelFeatures(const ccLibAlgorithms::GeomCharacteristicWithSubOptionSet& selectedFeatures, int level)
 {
     if (level >= numLevels() || level < 0)
     {
@@ -76,9 +79,9 @@ bool NAG::setLevelFeatures(const std::vector<Features::FeatureData>& selectedFea
     data->features.clear();
     data->features.reserve(selectedFeatures.size());
 
-    for (Features::FeatureData ftData : selectedFeatures)
+    for (const ccLibAlgorithms::GeomCharacteristicWithSubOption& f : selectedFeatures)
     {
-        QString sfName = GetFeatureSFName(ftData.f, ftData.subOption);
+        QString sfName = GetFeatureSFName(f.charac, f.subOption);
         if (sfName.isEmpty())
         {
             return false;
@@ -91,11 +94,16 @@ bool NAG::setLevelFeatures(const std::vector<Features::FeatureData>& selectedFea
             return false;
         }
 
-        // complete the feaure data structure
-        ftData.sf = data->getCCScalarField(sfIdx).get();
-        ftData.sfIdx = sfIdx;  
+        // populate the request structure (except for ApproxLocalDensity which was handled separately)
+        CCCoreLib::GeometricalAnalysisTools::MultiGeomCharacteristicRequest request;
+        {
+            request.c         = f.charac;
+            request.subOption = f.subOption;
+            request.sf        = (data && sfIdx >= 0 ? data->getCCScalarField(sfIdx).get() : nullptr);
+            request.sfIdx     = sfIdx;
+        } 
 
-        data->features.push_back(ftData);
+        data->features.push_back(request);
     }
 
     return true;
@@ -103,6 +111,8 @@ bool NAG::setLevelFeatures(const std::vector<Features::FeatureData>& selectedFea
 
 bool NAG::computeLevelFeatures(int level, int subLevel/*=0*/, const ccProgressDialog* pDlg/*=nullptr*/)
 {
+    const int RES_FACTOR_NORMALS = 3; // factor to multiply the voxel size to get the radius for normal estimation
+
     // Recover the level Data object we will be working on
     if (level < 0 || level >= static_cast<int>(size()) || subLevel < -1 || subLevel > level)
     {
@@ -110,6 +120,37 @@ bool NAG::computeLevelFeatures(int level, int subLevel/*=0*/, const ccProgressDi
         return false;
     }
     Data* data = (*this)[level];
+
+    if (level == subLevel)
+    {
+        // we compute features directly on the level's points (needs octree)
+        ccOctree::Shared theSubOctree = data->getOctree();
+        if (!theSubOctree)
+        {
+            theSubOctree = data->computeOctree(const_cast<ccProgressDialog*>(pDlg));
+            if (!theSubOctree)
+            {
+                // app->dispToConsole(QObject::tr("[GAE] Couldn't compute octree for level '%1'!").arg(level), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+                return false;
+            }
+        }
+
+        using GAT = CCCoreLib::GeometricalAnalysisTools;
+        PointCoordinateType radius = (*this)[level]->voxelSize * RES_FACTOR_NORMALS;
+        GAT::ErrorCode err = GAT::ComputeCharacteristics(data->features,
+                                                         (*this)[level],
+                                                         radius,
+                                                         nullptr,
+                                                         const_cast<ccProgressDialog*>(pDlg),
+                                                         theSubOctree.data());
+        if (err != GAT::NoError) 
+        { 
+            // errorMessage = "Failed to compute feature space";
+            return false;
+        }
+
+        return true;
+    }
 
     const ccPointCloud* sourcePoints = nullptr;
     if (subLevel == -1)
@@ -176,14 +217,14 @@ bool NAG::computeLevelFeatures(int level, int subLevel/*=0*/, const ccProgressDi
         CCCoreLib::DgmOctreeReferenceCloud neighboursCloud(&pointsInSegment, numberOfPoints);
         CCCoreLib::Neighbourhood Z(&neighboursCloud);
 
-        for (const Features::FeatureData& fd : data->features)
+        for (const CCCoreLib::GeometricalAnalysisTools::MultiGeomCharacteristicRequest& f : data->features)
         {
             ScalarType value = NAN_VALUE;
-            switch (fd.f)
+            switch (f.c)
             {
-                case Features::Feature::Eigen:
+                case CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic::Feature:
                     if (numberOfPoints > 3)
-                        value = static_cast<ScalarType>(Z.computeFeature(static_cast<CCCoreLib::Neighbourhood::GeomFeature>(fd.subOption)));
+                        value = static_cast<ScalarType>(Z.computeFeature(static_cast<CCCoreLib::Neighbourhood::GeomFeature>(f.subOption)));
                     break;
 
                 // case Features::Feature::Curvature:
@@ -191,23 +232,23 @@ bool NAG::computeLevelFeatures(int level, int subLevel/*=0*/, const ccProgressDi
 				// 		value = Z.computeCurvature(*queryPoint, static_cast<CCCoreLib::Neighbourhood::CurvatureType>(r.subOption));
 				// 	break;
 
-                case Features::Feature::Density:
+                case CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic::LocalDensity:
 					value = static_cast<ScalarType>(numberOfPoints);
 					break;
 
-				case Features::Feature::Normal:
+				case CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic::Normal:
 				{
 					const CCVector3* N = Z.getLSPlaneNormal();
 					if (N)
-                        switch (fd.subOption)
+                        switch (f.subOption)
 			            {
-                        case Features::NormalAxis::Nx:
+                        case CCCoreLib::Neighbourhood::NormalComponent::NormalX:
                             value = N->x;
                             break;
-                        case Features::NormalAxis::Ny:
+                        case CCCoreLib::Neighbourhood::NormalComponent::NormalY:
                             value = N->y;
                             break;
-                        case Features::NormalAxis::Nz:
+                        case CCCoreLib::Neighbourhood::NormalComponent::NormalZ:
                             value = N->z;
                             break;
                         default:
@@ -223,7 +264,7 @@ bool NAG::computeLevelFeatures(int level, int subLevel/*=0*/, const ccProgressDi
 					return false;
             }
 
-            fd.sf->setValue(rv, value);
+            f.sf->setValue(rv, value);
         }
     }
     return true;
@@ -238,7 +279,7 @@ bool NAG::mapFeaturesToLowerLevel(int high, int low, const ccProgressDialog* pDl
     Data* data = (*this)[high];
     Data* dataLow = (*this)[low];
 
-    for (const Features::FeatureData& fd : data->features)
+    for (const MultiGeomCharacteristicRequest& f : data->features)
     {
         int sfIdx;
         ccScalarField::Shared sfLow;
@@ -246,15 +287,15 @@ bool NAG::mapFeaturesToLowerLevel(int high, int low, const ccProgressDialog* pDl
         {
             // if the high and low levels are the same, we don't need to add a scalar field
             // just activate the existing scalar fields
-            sfIdx = fd.sfIdx;
+            sfIdx = f.sfIdx;
             sfLow = data->getCCScalarField(sfIdx);
         }
         else
         {
-            ccScalarField::Shared sfHigh = data->getCCScalarField(fd.sfIdx);
+            ccScalarField::Shared sfHigh = data->getCCScalarField(f.sfIdx);
 
             // add scalar field to the base level with a suffix to avoid name clashes between levels
-            QString sfName = GetFeatureSFName(fd.f, fd.subOption);
+            QString sfName = GetFeatureSFName(f.c, f.subOption);
             sfName += QString(" (L%1)").arg(high);
 
             sfIdx = dataLow->addField(sfName.toStdString());
