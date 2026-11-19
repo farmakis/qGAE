@@ -76,7 +76,12 @@ bool NAG::setLevelFeatures(const GeomCharacteristicWithSubOptionSet& selectedFea
     }
 
     Data* data = (*this)[level];
-    data->features.clear();
+    if (!data->features.empty())
+    {
+        // clear any existing features
+        data->deleteAllScalarFields();
+        data->features.clear();
+    }
     data->features.reserve(selectedFeatures.size());
 
     for (const GeomCharacteristicWithSubOption& f : selectedFeatures)
