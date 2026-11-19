@@ -49,7 +49,7 @@ public:
 	void setSessionActive( bool active );
 
 	//! Features selected in the feature dialog
-	CCCoreLib::GeometricalAnalysisTools::MultiGeomCharacteristicRequestSet getSelectedFeatures() const;
+	GeomCharacteristicWithSubOptionSet getSelectedFeatures() const;
 	//! Level at which the features are computed
 	int getFeatureLevel() const;
 	//! Restricts the feature level (must be below the level being processed)

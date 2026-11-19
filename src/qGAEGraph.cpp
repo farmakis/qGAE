@@ -67,7 +67,7 @@ std::vector<int32_t> NAG::getSuperIndex(int high, int low)
     return superIndex;
 }
 
-bool NAG::setLevelFeatures(const ccLibAlgorithms::GeomCharacteristicWithSubOptionSet& selectedFeatures, int level)
+bool NAG::setLevelFeatures(const GeomCharacteristicWithSubOptionSet& selectedFeatures, int level)
 {
     if (level >= numLevels() || level < 0)
     {
@@ -79,7 +79,7 @@ bool NAG::setLevelFeatures(const ccLibAlgorithms::GeomCharacteristicWithSubOptio
     data->features.clear();
     data->features.reserve(selectedFeatures.size());
 
-    for (const ccLibAlgorithms::GeomCharacteristicWithSubOption& f : selectedFeatures)
+    for (const GeomCharacteristicWithSubOption& f : selectedFeatures)
     {
         QString sfName = GetFeatureSFName(f.charac, f.subOption);
         if (sfName.isEmpty())
@@ -279,7 +279,7 @@ bool NAG::mapFeaturesToLowerLevel(int high, int low, const ccProgressDialog* pDl
     Data* data = (*this)[high];
     Data* dataLow = (*this)[low];
 
-    for (const MultiGeomCharacteristicRequest& f : data->features)
+    for (const CCCoreLib::GeometricalAnalysisTools::MultiGeomCharacteristicRequest& f : data->features)
     {
         int sfIdx;
         ccScalarField::Shared sfLow;

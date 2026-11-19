@@ -24,6 +24,30 @@
 #include <Neighbourhood.h>
 #include <GeometricalAnalysisTools.h>
 
+// System
+#include <vector>
+
 class ccScalarField;
+
+//! Geometric characteristic (with sub option), as selected in the UI
+struct GeomCharacteristicWithSubOption
+{
+	GeomCharacteristicWithSubOption(CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic c = CCCoreLib::GeometricalAnalysisTools::Feature, int option = 0)
+	    : charac(c)
+	    , subOption(option)
+	{
+	}
+
+	bool operator==(const GeomCharacteristicWithSubOption& other) const
+	{
+		return charac == other.charac && subOption == other.subOption;
+	}
+
+	CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic charac;        //!< Geometric characteristic
+	int                                                     subOption = 0; //!< Sub option (if any)
+};
+
+//! Set of GeomCharacteristicWithSubOption instances
+using GeomCharacteristicWithSubOptionSet = std::vector<GeomCharacteristicWithSubOption>;
 
 QString GetFeatureSFName(CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic feature, int subOption);

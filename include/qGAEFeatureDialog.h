@@ -22,9 +22,6 @@
 // Ui
 #include <ui_qGAEFeatureDialog.h>
 
-// qCC_db
-#include "ccLibAlgorithms.h"
-
 // Qt
 #include <QDialog>
 
@@ -41,9 +38,9 @@ class qGAEFeatureDialog : public QDialog
 	//! Default constructor
 	explicit qGAEFeatureDialog(QWidget* parent = nullptr);
 	//! Sets selected features
-	void setSelectedFeatures(const ccLibAlgorithms::GeomCharacteristicWithSubOptionSet& features);
+	void setSelectedFeatures(const GeomCharacteristicWithSubOptionSet& features);
 	//! Returns selected features
-	ccLibAlgorithms::GeomCharacteristicWithSubOptionSet getSelectedFeatures() const;
+	GeomCharacteristicWithSubOptionSet getSelectedFeatures() const;
 
 	//! Returns	the level at which the features will be computed
 	int getLevel() const;
@@ -72,8 +69,8 @@ class qGAEFeatureDialog : public QDialog
 			return gc == other.gc;
 		}
 
-		ccLibAlgorithms::GeomCharacteristicWithSubOption gc;                 //!< Geometric characteristic (with sub option)
-		QCheckBox*                                       checkBox = nullptr; //!< Corresponding checkbox         
+		GeomCharacteristicWithSubOption gc;                 //!< Geometric characteristic (with sub option)
+		QCheckBox*                      checkBox = nullptr; //!< Corresponding checkbox         
 	};
 
 	//! Add option

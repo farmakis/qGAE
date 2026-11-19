@@ -19,7 +19,6 @@
 
 // qCC_db
 #include <ccLog.h>
-#include <ccLibAlgorithms.h>
 
 // CCCoreLib
 #include <Neighbourhood.h>
@@ -74,26 +73,26 @@ void qGAEFeatureDialog::addOption(const Option& option)
 {
 	if (option.checkBox == nullptr)
 	{
-		ccLog::Warning(QString("Internal error: null checkbox for feature '%1'").arg(static_cast<int>(option.ft.f)));
+		ccLog::Warning(QString("Internal error: null checkbox for feature '%1'").arg(static_cast<int>(option.gc.charac)));
 		assert(false);
 		return;
 	}
 	if (std::find(m_options.begin(), m_options.end(), option) != m_options.end())
 	{
-		ccLog::Warning(QString("Internal error: duplicate option for feature '%1'").arg(static_cast<int>(option.ft.f)));
+		ccLog::Warning(QString("Internal error: duplicate option for feature '%1'").arg(static_cast<int>(option.gc.charac)));
 		assert(false);
 		return;
 	}
 	m_options.push_back(option);
 }
 
-void qGAEFeatureDialog::setSelectedFeatures(const ccLibAlgorithms::GeomCharacteristicWithSubOptionSet& features)
+void qGAEFeatureDialog::setSelectedFeatures(const GeomCharacteristicWithSubOptionSet& features)
 {
 	reset();
 
-	for (const ccLibAlgorithms::GeomCharacteristicWithSubOption f : features)
+	for (const GeomCharacteristicWithSubOption& f : features)
 	{
-		auto it = std::find(m_options.begin(), m_options.end(), Option(nullptr, f));
+		auto it = std::find(m_options.begin(), m_options.end(), Option(nullptr, f.charac, f.subOption));
 		if (it != m_options.end())
 		{
 			it->checkBox->setChecked(true);
@@ -101,9 +100,9 @@ void qGAEFeatureDialog::setSelectedFeatures(const ccLibAlgorithms::GeomCharacter
 	}
 }
 
-ccLibAlgorithms::GeomCharacteristicWithSubOptionSet qGAEFeatureDialog::getSelectedFeatures() const
+GeomCharacteristicWithSubOptionSet qGAEFeatureDialog::getSelectedFeatures() const
 {
-	ccLibAlgorithms::GeomCharacteristicWithSubOptionSet features;
+	GeomCharacteristicWithSubOptionSet features;
 	for (const Option& opt : m_options)
 	{
 		assert(opt.checkBox);
