@@ -251,16 +251,6 @@ p, li { white-space: pre-wrap; }
     </layout>
    </item>
    <item>
-    <widget class="QPushButton" name="featureMenuButton">
-     <property name="toolTip">
-      <string>Select the features to compute and their level</string>
-     </property>
-     <property name="text">
-      <string>Features</string>
-     </property>
-    </widget>
-   </item>
-   <item>
     <layout class="QHBoxLayout" name="stepButtonsLayout">
      <item>
       <widget class="QPushButton" name="voxelButton">
@@ -348,4 +338,3 @@ p, li { white-space: pre-wrap; }
   </connection>
  </connections>
 </ui>
-

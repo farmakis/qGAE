@@ -34,9 +34,14 @@ qGAEDialog::qGAEDialog( ccMainAppInterface* app )
 	setupUi( this );
 
 	m_featureDialog = new qGAEFeatureDialog( this );
-	connect( featureMenuButton, &QPushButton::clicked, this, [this]() { m_featureDialog->exec(); } );
 	connect( voxelButton, &QPushButton::clicked, this, &qGAEDialog::voxelRequested );
-	connect( featureButton, &QPushButton::clicked, this, &qGAEDialog::featuresRequested );
+	connect( featureButton, &QPushButton::clicked, this, [this]()
+	{
+		if ( m_featureDialog->exec() == QDialog::Accepted && !m_featureDialog->getSelectedFeatures().empty() )
+		{
+			Q_EMIT featuresRequested();
+		}
+	} );
 	connect( runButton,   &QPushButton::clicked, this, &qGAEDialog::runRequested );
 	connect( resetButton, &QPushButton::clicked, this, &qGAEDialog::resetRequested );
 

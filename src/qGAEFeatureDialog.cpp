@@ -38,8 +38,8 @@ qGAEFeatureDialog::qGAEFeatureDialog(QWidget* parent /*=nullptr*/)
 {
 	setupUi(this);
 
-	connect(buttonBox->button(QDialogButtonBox::Reset), &QPushButton::clicked, this, &qGAEFeatureDialog::reset);
 	connect(normalsGroupBox, &QGroupBox::toggled, this, &qGAEFeatureDialog::onNormalsToggled);
+	connect(buttonBox->button(QDialogButtonBox::Reset), &QPushButton::clicked, this, &qGAEFeatureDialog::reset);
 
 	try
 	{

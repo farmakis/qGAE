@@ -34,7 +34,7 @@ class qGAEFeatureDialog : public QDialog
 {
 	Q_OBJECT
 
-  public:
+public:
 	//! Default constructor
 	explicit qGAEFeatureDialog(QWidget* parent = nullptr);
 	//! Sets selected features
@@ -52,14 +52,14 @@ class qGAEFeatureDialog : public QDialog
 	//! Reset the whole dialog
 	void reset();
 
-  protected:
+protected:
 	//! Composite structure for a geometric characteristic option and its corresponding checkbox
 	struct Option
 	{
 		//! Default constructor
 		Option(QCheckBox* cb = nullptr, CCCoreLib::GeometricalAnalysisTools::GeomCharacteristic c = CCCoreLib::GeometricalAnalysisTools::Feature, int option = 0)
-		    : gc(c, option)
-		    , checkBox(cb)
+			: gc(c, option)
+			, checkBox(cb)
 		{
 		}
 
