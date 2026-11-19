@@ -39,6 +39,7 @@ qGAEFeatureDialog::qGAEFeatureDialog(QWidget* parent /*=nullptr*/)
 	setupUi(this);
 
 	connect(buttonBox->button(QDialogButtonBox::Reset), &QPushButton::clicked, this, &qGAEFeatureDialog::reset);
+	connect(normalsGroupBox, &QGroupBox::toggled, this, &qGAEFeatureDialog::onNormalsToggled);
 
 	try
 	{
@@ -84,6 +85,13 @@ void qGAEFeatureDialog::addOption(const Option& option)
 		return;
 	}
 	m_options.push_back(option);
+}
+
+void qGAEFeatureDialog::onNormalsToggled()
+{
+	normalXCheckBox->setChecked(normalsGroupBox->isChecked());
+	normalYCheckBox->setChecked(normalsGroupBox->isChecked());
+	normalZCheckBox->setChecked(normalsGroupBox->isChecked());
 }
 
 void qGAEFeatureDialog::setSelectedFeatures(const GeomCharacteristicWithSubOptionSet& features)

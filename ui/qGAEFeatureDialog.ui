@@ -79,7 +79,7 @@
           <string>Geometric features (based on local eigenvalues: (L1, L2, L3))</string>
          </property>
          <property name="title">
-          <string>Features</string>
+          <string>Eigen Features</string>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_2">
           <item>
@@ -233,24 +233,54 @@
             </property>
            </widget>
           </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="normalsGroupBox">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="toolTip">
+          <string>Compute individual normal components</string>
+         </property>
+         <property name="title">
+          <string>Normals</string>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="checked">
+          <bool>false</bool>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_1">
           <item>
            <widget class="QCheckBox" name="normalXCheckBox">
             <property name="text">
-             <string>Normal X (Nx)</string>
+             <string>X</string>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
           <item>
            <widget class="QCheckBox" name="normalYCheckBox">
             <property name="text">
-             <string>Normal Y (Ny)</string>
+             <string>Y</string>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
           <item>
            <widget class="QCheckBox" name="normalZCheckBox">
             <property name="text">
-             <string>Normal Z (Nz)</string>
+             <string>Z</string>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
             </property>
            </widget>
           </item>

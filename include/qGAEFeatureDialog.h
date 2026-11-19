@@ -73,6 +73,9 @@ class qGAEFeatureDialog : public QDialog
 		QCheckBox*                      checkBox = nullptr; //!< Corresponding checkbox         
 	};
 
+	//! Toggle normal components based on parent box
+	void onNormalsToggled();
+
 	//! Add option
 	void addOption(const Option& option);
 
