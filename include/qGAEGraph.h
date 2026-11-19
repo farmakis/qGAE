@@ -42,6 +42,8 @@ class NAG : public std::vector<Data*>
 
         bool mapFeaturesToLowerLevel(int high, int low, const ccProgressDialog* pDlg = nullptr);
 
+        void deleteAllScalarFields(int level);
+
     private:
         std::vector<float> getSubSize(int high, int low = 0);
 };

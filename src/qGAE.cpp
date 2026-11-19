@@ -69,7 +69,7 @@ void qGAE::doAction()
 		connect( m_dlg, &qGAEDialog::voxelRequested, this, &qGAE::onCreateVoxelGrid );
 		connect( m_dlg, &qGAEDialog::featuresRequested, this, &qGAE::onComputeFeatures );
 		connect( m_dlg, &qGAEDialog::runRequested,   this, &qGAE::onRunPartition );
-		connect( m_dlg, &qGAEDialog::resetRequested, this, &qGAE::onReset );
+		connect( m_dlg, &qGAEDialog::undoRequested, this, &qGAE::onUndo );
 		connect( m_dlg, &QDialog::finished, this, [this]() { m_dlg->saveParamsToPersistentSettings(); } );
 	}
 
@@ -125,12 +125,27 @@ void qGAE::onRunPartition()
 	updateFeatureLevelLimit();
 }
 
-void qGAE::onReset()
+void qGAE::onUndo()
 {
-	// the levels stay in the DB, we only forget them
-	m_session.reset();
-	m_dlg->setSessionActive( false );
+	// only the 
+	popLastLevel();
 	updateFeatureLevelLimit();
+}
+
+void qGAE::popLastLevel()
+{
+	// nothing to undo: no session, or only the base level remains
+    if (!m_session.isActive() || m_session.nag.size() < 2)
+        return;
+
+	m_session.nag.deleteAllScalarFields(m_session.nag.numLevels() - 1);
+
+	m_app->removeFromDB(m_session.nag.back());
+	m_session.nag.pop_back();
+
+	// update session on the new last level
+	Data* newLast = m_session.nag.back();
+	m_session.lastId  = newLast ? newLast->getUniqueID() : 0;
 }
 
 void qGAE::updateFeatureLevelLimit()

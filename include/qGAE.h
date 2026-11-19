@@ -45,7 +45,8 @@ private:
 	void onCreateVoxelGrid();
 	void onComputeFeatures();
 	void onRunPartition();
-	void onReset();
+	void onUndo();
+	void popLastLevel();
 	void updateFeatureLevelLimit();
 
 	//! Default action

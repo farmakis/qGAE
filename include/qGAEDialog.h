@@ -62,7 +62,7 @@ Q_SIGNALS:
 	void voxelRequested();
 	void featuresRequested();
 	void runRequested();
-	void resetRequested();
+	void undoRequested();
 
 private:
 	ccMainAppInterface* m_app;

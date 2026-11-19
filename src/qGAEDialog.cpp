@@ -43,7 +43,7 @@ qGAEDialog::qGAEDialog( ccMainAppInterface* app )
 		}
 	} );
 	connect( runButton,   &QPushButton::clicked, this, &qGAEDialog::runRequested );
-	connect( resetButton, &QPushButton::clicked, this, &qGAEDialog::resetRequested );
+	connect( undoButton, &QPushButton::clicked, this, &qGAEDialog::undoRequested );
 
 	loadParamsFromPersistentSettings();
 }
@@ -96,7 +96,7 @@ void qGAEDialog::setSessionActive(bool active)
 	comboBoxConnectivity->setEnabled(!active);
 	runButton->setEnabled(active);
 	featureButton->setEnabled(active);
-	resetButton->setEnabled(active);
+	undoButton->setEnabled(active);
 }
 
 void qGAEDialog::loadParamsFromPersistentSettings()

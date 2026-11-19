@@ -255,14 +255,14 @@ p, li { white-space: pre-wrap; }
      <item>
       <widget class="QPushButton" name="voxelButton">
        <property name="text">
-        <string>Create voxel grid</string>
+        <string>Compute grid graph</string>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QPushButton" name="featureButton">
        <property name="text">
-        <string>Compute level features</string>
+        <string>Compute features</string>
        </property>
       </widget>
      </item>
@@ -272,17 +272,17 @@ p, li { white-space: pre-wrap; }
         <bool>false</bool>
        </property>
        <property name="text">
-        <string>Run next level</string>
+        <string>Compute next level</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="resetButton">
+      <widget class="QPushButton" name="undoButton">
        <property name="enabled">
         <bool>false</bool>
        </property>
        <property name="text">
-        <string>Reset</string>
+        <string>Undo</string>
        </property>
       </widget>
      </item>
