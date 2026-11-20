@@ -17,16 +17,9 @@
 
 #include "qGAEVoxelDialog.h"
 
-// qCC_db
-#include <ccLog.h>
-
 // Qt
 #include <QDialogButtonBox>
 #include <QPushButton>
-
-// System
-#include <algorithm>
-#include <cassert>
 
 qGAEVoxelDialog::qGAEVoxelDialog(QWidget* parent /*=nullptr*/)
     : QDialog(parent)

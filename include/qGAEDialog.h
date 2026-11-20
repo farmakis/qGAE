@@ -22,10 +22,10 @@
 #include "qGAEFeatures.h"
 #include "qGAEFeatureDialog.h"
 #include "qGAEVoxelDialog.h"
+#include "qGAECutPursuitDialog.h"
 
 //Qt
 #include <QSettings>
-#include <vector>
 
 class ccMainAppInterface;
 
@@ -41,7 +41,7 @@ public:
 	int getResolution() const;
 	//! Voxel graph connectivity (6, 14 or 26)
 	int getConnectivity() const;
-	//! Partition parameters (for the next level)
+	//! Cut Pursuit partition parameters
 	double getRegularization() const;
 	double getSpatialWeight() const;
 	int    getCutoff() const;
@@ -69,4 +69,5 @@ private:
 	ccMainAppInterface* m_app;
 	qGAEFeatureDialog*  m_featureDialog;
 	qGAEVoxelDialog*  m_voxelDialog;
+	qGAECutPursuitDialog*  m_cutPursuitDialog;
 };

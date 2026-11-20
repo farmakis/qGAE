@@ -17,8 +17,6 @@
 
 #pragma once
 
-#include "qGAEFeatures.h"
-
 // Ui
 #include <ui_qGAEVoxelDialog.h>
 

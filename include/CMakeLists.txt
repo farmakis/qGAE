@@ -2,6 +2,7 @@
 target_sources( ${PROJECT_NAME}
 	PRIVATE
 		${CMAKE_CURRENT_LIST_DIR}/qGAE.h
+		${CMAKE_CURRENT_LIST_DIR}/qGAECutPursuitDialog.h
 		${CMAKE_CURRENT_LIST_DIR}/qGAEDialog.h
 		${CMAKE_CURRENT_LIST_DIR}/qGAEFeatures.h
 		${CMAKE_CURRENT_LIST_DIR}/qGAEFeatureDialog.h

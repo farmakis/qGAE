@@ -40,7 +40,7 @@ qGAEDialog::qGAEDialog( ccMainAppInterface* app )
 		{
 			Q_EMIT voxelRequested(); 
 		}
-	});
+	} );
 
 	m_featureDialog = new qGAEFeatureDialog( this );
 	connect( featureButton, &QPushButton::clicked, this, [this]()
@@ -50,7 +50,16 @@ qGAEDialog::qGAEDialog( ccMainAppInterface* app )
 			Q_EMIT featuresRequested();
 		}
 	} );
-	connect( runButton,   &QPushButton::clicked, this, &qGAEDialog::runRequested );
+
+	m_cutPursuitDialog = new qGAECutPursuitDialog( this );
+	connect( runButton,   &QPushButton::clicked, this, [this]()
+	{
+		if ( m_cutPursuitDialog->exec() == QDialog::Accepted )
+		{
+			Q_EMIT runRequested();
+		}
+	} );
+
 	connect( undoButton, &QPushButton::clicked, this, &qGAEDialog::undoRequested );
 
 	loadParamsFromPersistentSettings();
@@ -83,17 +92,17 @@ int qGAEDialog::getConnectivity() const
 
 double qGAEDialog::getRegularization() const
 {
-	return doubleSpinBoxRegularization->value();
+	return m_cutPursuitDialog->getRegularization();
 }
 
 double qGAEDialog::getSpatialWeight() const
 {
-	return doubleSpinBoxSpatialWeight->value();
+	return m_cutPursuitDialog->getSpatialWeight();
 }
 
 int qGAEDialog::getCutoff() const
 {
-	return intSpinBoxCutoff->value();
+	return m_cutPursuitDialog->getCutoff();
 }
 
 void qGAEDialog::setSessionActive(bool active)
@@ -111,15 +120,15 @@ void qGAEDialog::loadParamsFromPersistentSettings()
 
 	//read parameters
 	// int resolution 		  = settings.value("Resolution", intSpinBoxResolution->value()).toInt();
-	double regularization = settings.value("Regularization", doubleSpinBoxRegularization->value()).toDouble();
-	double spatialWeight  = settings.value("SpatialWeight", doubleSpinBoxSpatialWeight->value()).toDouble();
-	int cutoff            = settings.value("Cutoff", intSpinBoxCutoff->value()).toInt();
+	// double regularization = settings.value("Regularization", doubleSpinBoxRegularization->value()).toDouble();
+	// double spatialWeight  = settings.value("SpatialWeight", doubleSpinBoxSpatialWeight->value()).toDouble();
+	// int cutoff            = settings.value("Cutoff", intSpinBoxCutoff->value()).toInt();
 
 	//apply parameters
 	// intSpinBoxResolution->setValue(resolution);
-	doubleSpinBoxRegularization->setValue(regularization);
-	doubleSpinBoxSpatialWeight->setValue(spatialWeight);
-	intSpinBoxCutoff->setValue(cutoff);
+	// doubleSpinBoxRegularization->setValue(regularization);
+	// doubleSpinBoxSpatialWeight->setValue(spatialWeight);
+	// intSpinBoxCutoff->setValue(cutoff);
 }
 
 void qGAEDialog::saveParamsToPersistentSettings()
@@ -127,7 +136,7 @@ void qGAEDialog::saveParamsToPersistentSettings()
 	QSettings settings("qGAE");
 	//save parameters
 	// settings.setValue("Resolution", intSpinBoxResolution->value());
-	settings.setValue("Regularization", doubleSpinBoxRegularization->value());
-	settings.setValue("SpatialWeight", doubleSpinBoxSpatialWeight->value());
-	settings.setValue("Cutoff", intSpinBoxCutoff->value());
+	// settings.setValue("Regularization", doubleSpinBoxRegularization->value());
+	// settings.setValue("SpatialWeight", doubleSpinBoxSpatialWeight->value());
+	// settings.setValue("Cutoff", intSpinBoxCutoff->value());
 }
