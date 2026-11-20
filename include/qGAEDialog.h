@@ -24,19 +24,22 @@
 #include "qGAEVoxelDialog.h"
 #include "qGAECutPursuitDialog.h"
 
+//CC
+#include <ccOverlayDialog.h>
+
 //Qt
 #include <QSettings>
 
 class ccMainAppInterface;
 
 //! Dialog for the GAE plugin
-class qGAEDialog : public QDialog, public Ui::GAEDialog
+class qGAEDialog : public ccOverlayDialog, public Ui::GAEDialog
 {
 	Q_OBJECT
 
 public:
 	//! Default constructor
-	explicit qGAEDialog( ccMainAppInterface* app );
+	explicit qGAEDialog( ccMainAppInterface* app, QWidget* parent/*=nullptr*/ );
 
 	int getResolution() const;
 	//! Voxel graph connectivity (6, 14 or 26)
@@ -66,7 +69,7 @@ Q_SIGNALS:
 	void undoRequested();
 
 private:
-	ccMainAppInterface* m_app;
+	ccMainAppInterface* m_app = nullptr;
 	qGAEFeatureDialog*  m_featureDialog;
 	qGAEVoxelDialog*  m_voxelDialog;
 	qGAECutPursuitDialog*  m_cutPursuitDialog;

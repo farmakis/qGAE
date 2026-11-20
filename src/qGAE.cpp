@@ -25,6 +25,9 @@
 // Qt
 #include <QMainWindow>
 
+// qCC_glWindow
+#include <ccGLWindowInterface.h>
+
 qGAE::qGAE( QObject* parent )
 	: QObject( parent )
 	, ccStdPluginInterface( ":/CC/plugin/qGAE/info.json" )
@@ -60,28 +63,40 @@ QList<QAction*> qGAE::getActions()
 
 void qGAE::doAction()
 {
+	//m_app should have already been initialized by CC when plugin is loaded!
+	assert(m_app);
+
 	//disclaimer accepted?
 	if (!qGAEDisclaimerDialog::show(m_app))
 		return;
 	
-	//m_app should have already been initialized by CC when plugin is loaded!
-	assert(m_app);
+	//check valid window
+	if (!m_app->getActiveGLWindow())
+	{
+		//invalid pointer error
+		m_app->dispToConsole("[GAE] Ccould not find the CloudCompare window. Abort!", ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+	}
+	
 	if ( !m_dlg )
 	{
-		m_dlg = new qGAEDialog( m_app );
+		//bind GUI events
+		m_dlg = new qGAEDialog( m_app, m_app->getMainWindow() );
+
+		//general
+		connect(m_dlg->closeButton, &QAbstractButton::clicked, m_dlg, &QDialog::close);
+		connect( m_dlg, &qGAEDialog::undoRequested, this, &qGAE::onUndo );
+		connect( m_dlg, &QDialog::finished, this, [this]() { m_dlg->saveParamsToPersistentSettings(); } );
+
+		// sub-dialogs
 		connect( m_dlg, &qGAEDialog::voxelRequested, this, &qGAE::onCreateVoxelGrid );
 		connect( m_dlg, &qGAEDialog::featuresRequested, this, &qGAE::onComputeFeatures );
 		connect( m_dlg, &qGAEDialog::runRequested,   this, &qGAE::onRunPartition );
-		connect( m_dlg, &qGAEDialog::undoRequested, this, &qGAE::onUndo );
-		connect( m_dlg, &QDialog::finished, this, [this]() { m_dlg->saveParamsToPersistentSettings(); } );
 	}
 
-	m_dlg->setSessionActive( m_session.isActive() );
+	m_dlg->linkWith(m_app->getActiveGLWindow());
 
-	// non-modal: the 3D view stays usable between two runs
-	m_dlg->show();
-	m_dlg->raise();
-	m_dlg->activateWindow();
+	// begin
+	launch();
 }
 
 void qGAE::onCreateVoxelGrid()
@@ -133,6 +148,30 @@ void qGAE::onUndo()
 	// only the 
 	popLastLevel();
 	updateFeatureLevelLimit();
+}
+
+//Begin GAE 
+bool qGAE::launch()
+{
+	//check valid gl window
+	if (!m_app->getActiveGLWindow())
+	{
+		//invalid pointer error
+		m_app->dispToConsole("[GAE] Ccould not find the CloudCompare window. Abort!", ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+		return false;
+	}
+
+	//refresh window
+	m_app->getActiveGLWindow()->redraw(true, false);
+
+	//start GUI
+	m_app->registerOverlayDialog(m_dlg, Qt::TopRightCorner);
+	m_dlg->start();
+
+	// activate session helper struct
+	m_dlg->setSessionActive( m_session.isActive() );
+
+	return true;
 }
 
 void qGAE::popLastLevel()

@@ -41,6 +41,10 @@ public:
 	QList<QAction*> getActions() override;
 
 private:
+
+	//Begin GAE 
+	bool launch();
+
 	void doAction();
 	void onCreateVoxelGrid();
 	void onComputeFeatures();
