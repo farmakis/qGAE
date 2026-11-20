@@ -4,6 +4,7 @@ target_sources( ${PROJECT_NAME}
 		${CMAKE_CURRENT_LIST_DIR}/qGAE.cpp
 		${CMAKE_CURRENT_LIST_DIR}/qGAECutPursuitDialog.cpp
 		${CMAKE_CURRENT_LIST_DIR}/qGAEDialog.cpp
+		${CMAKE_CURRENT_LIST_DIR}/qGAEDisclaimerDialog.cpp
 		${CMAKE_CURRENT_LIST_DIR}/qGAEFeatures.cpp
 		${CMAKE_CURRENT_LIST_DIR}/qGAEFeatureDialog.cpp
 		${CMAKE_CURRENT_LIST_DIR}/qGAEGraph.cpp

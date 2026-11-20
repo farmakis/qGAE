@@ -17,9 +17,12 @@
 
 #include "qGAE.h"
 
+// Local
 #include "qGAEDialog.h"
+#include "qGAEDisclaimerDialog.h"
 #include "qGAEProcess.h"
 
+// Qt
 #include <QMainWindow>
 
 qGAE::qGAE( QObject* parent )
@@ -57,12 +60,12 @@ QList<QAction*> qGAE::getActions()
 
 void qGAE::doAction()
 {
-	if ( m_app == nullptr )
-	{
-		Q_ASSERT( false );
+	//disclaimer accepted?
+	if (!qGAEDisclaimerDialog::show(m_app))
 		return;
-	}
-
+	
+	//m_app should have already been initialized by CC when plugin is loaded!
+	assert(m_app);
 	if ( !m_dlg )
 	{
 		m_dlg = new qGAEDialog( m_app );
