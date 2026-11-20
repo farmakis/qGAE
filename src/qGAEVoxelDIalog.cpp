@@ -17,9 +17,8 @@
 
 #include "qGAEVoxelDialog.h"
 
-// Qt
-#include <QDialogButtonBox>
-#include <QPushButton>
+// CCCoreLib
+#include <DgmOctree.h>
 
 qGAEVoxelDialog::qGAEVoxelDialog(QWidget* parent /*=nullptr*/)
     : QDialog(parent)
@@ -27,16 +26,20 @@ qGAEVoxelDialog::qGAEVoxelDialog(QWidget* parent /*=nullptr*/)
 {
 	setupUi(this);
 
-	connect(buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
-    connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
+	octreeLevelSpinBox->setMaximum(CCCoreLib::DgmOctree::MAX_OCTREE_LEVEL);
+}
+
+void qGAEVoxelDialog::setCloud(ccGenericPointCloud* cloud)
+{
+	octreeLevelSpinBox->setCloud(cloud);
 }
 
 int qGAEVoxelDialog::getResolution() const
 {
-	return intSpinBoxResolution->value();
+	return octreeLevelSpinBox->value();
 }
 
 int qGAEVoxelDialog::getConnectivity() const
 {
-	return comboBoxConnectivity->currentText().toInt();
+	return connectivityComboBox->currentText().toInt();
 }

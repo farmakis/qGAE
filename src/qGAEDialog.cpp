@@ -21,6 +21,9 @@
 //CCPluginAPI
 #include <ccMainAppInterface.h>
 
+//qCC_db
+#include <ccHObjectCaster.h>
+
 //Qt
 #include <QMainWindow>
 #include <QPushButton>
@@ -36,6 +39,10 @@ qGAEDialog::qGAEDialog( ccMainAppInterface* app )
 	m_voxelDialog = new qGAEVoxelDialog( this );
 	connect( voxelButton, &QPushButton::clicked, this, [this]()
 	{
+		const ccHObject::Container& selectedEntities = m_app ? m_app->getSelectedEntities() : ccHObject::Container();
+		ccGenericPointCloud* cloud = selectedEntities.empty() ? nullptr : ccHObjectCaster::ToGenericPointCloud(selectedEntities.front());
+		m_voxelDialog->setCloud(cloud);
+
 		if ( m_voxelDialog->exec() == QDialog::Accepted )
 		{
 			Q_EMIT voxelRequested(); 

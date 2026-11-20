@@ -23,8 +23,7 @@
 // Qt
 #include <QDialog>
 
-// System
-#include <vector>
+class ccGenericPointCloud;
 
 //! Dialog for selecting the voxel grid setup
 class qGAEVoxelDialog : public QDialog
@@ -35,6 +34,9 @@ class qGAEVoxelDialog : public QDialog
 public:
 	//! Default constructor
 	explicit qGAEVoxelDialog(QWidget* parent = nullptr);
+
+	//! Sets the reference cloud used to display the grid step suffix
+	void setCloud(ccGenericPointCloud* cloud);
 
     int getResolution() const;
 	//! Voxel graph connectivity (6, 14 or 26)

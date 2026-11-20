@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>240</width>
-    <height>120</height>
+    <width>260</width>
+    <height>140</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -33,7 +33,7 @@
       </widget>
      </item>
      <item row="0" column="1">
-      <widget class="ccOctreeSpinBox" name="intSpinBoxResolution">
+      <widget class="ccOctreeSpinBox" name="octreeLevelSpinBox">
        <property name="minimumSize">
         <size>
          <width>0</width>
@@ -65,7 +65,7 @@
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QComboBox" name="comboBoxConnectivity">
+      <widget class="QComboBox" name="connectivityComboBox">
        <property name="currentIndex">
         <number>2</number>
        </property>
