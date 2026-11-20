@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>600</width>
+    <width>300</width>
     <height>40</height>
    </rect>
   </property>
@@ -38,25 +38,52 @@
    </property>
    <item>
     <widget class="QPushButton" name="voxelButton">
-     <property name="text">
-      <string>Compute grid graph</string>
+     <property name="toolTip">
+      <string>Compute voxel graph graph at a specific resolution</string>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>56</width>
+       <height>32</height>
+      </size>
+     </property>
+     <property name="icon">
+      <iconset resource="../qGAE.qrc">
+       <normaloff>:/CC/plugin/qGAE/images/voxel-grid.png</normaloff>:/CC/plugin/qGAE/images/voxel-grid.png</iconset>
      </property>
     </widget>
    </item>
    <item>
     <widget class="QPushButton" name="featureButton">
-     <property name="text">
-      <string>Compute features</string>
+     <property name="toolTip">
+      <string>Feature computation at a given level of the graph</string>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>56</width>
+       <height>32</height>
+      </size>
+     </property>
+     <property name="icon">
+      <iconset resource="../qGAE.qrc">
+       <normaloff>:/CC/plugin/qGAE/images/features.png</normaloff>:/CC/plugin/qGAE/images/features.png</iconset>
      </property>
     </widget>
    </item>
    <item>
     <widget class="QPushButton" name="runButton">
-     <property name="enabled">
-      <bool>false</bool>
+     <property name="toolTip">
+      <string>Partition the current graph level</string>
      </property>
-     <property name="text">
-      <string>Compute next level</string>
+     <property name="minimumSize">
+      <size>
+       <width>56</width>
+       <height>32</height>
+      </size>
+     </property>
+     <property name="icon">
+      <iconset resource="../qGAE.qrc">
+       <normaloff>:/CC/plugin/qGAE/images/partition.png</normaloff>:/CC/plugin/qGAE/images/partition.png</iconset>
      </property>
     </widget>
    </item>
@@ -69,6 +96,12 @@
    </item>
    <item>
     <widget class="QToolButton" name="undoButton">
+     <property name="minimumSize">
+      <size>
+       <width>32</width>
+       <height>32</height>
+      </size>
+     </property> 
      <property name="toolTip">
       <string>Undo last action</string>
      </property>
@@ -83,6 +116,12 @@
    </item>
    <item>
     <widget class="QToolButton" name="closeButton">
+     <property name="minimumSize">
+      <size>
+       <width>32</width>
+       <height>32</height>
+      </size>
+     </property>
      <property name="toolTip">
       <string>Exit Graph Analysis Engine. Thanks for visiting :)</string>
      </property>

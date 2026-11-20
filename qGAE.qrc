@@ -1,7 +1,11 @@
 <RCC>
   <qresource prefix="/CC/plugin/qGAE">
     <file>images/qGAE.png</file>
-    <file>images/hierarchical-partition.jpg</file>
+    <file>images/yellowscan.png</file>
+    <file>images/brgm.png</file>
+    <file>images/voxel-grid.png</file>
+    <file>images/features.png</file>
+    <file>images/partition.png</file>
     <file>info.json</file>
   </qresource>
 </RCC>
