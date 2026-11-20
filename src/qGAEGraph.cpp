@@ -331,14 +331,7 @@ void NAG::deleteAllScalarFields(int level)
         return;
     }
 
-    // first delete the labels on the base level
-    int sfIdx = (*this)[0]->getScalarFieldIndexByName(QString("Level %1").arg(level).toStdString());
-    if (sfIdx >= 0)
-    {
-        (*this)[0]->deleteScalarField(sfIdx);
-    }
-
-    // then find the features that were mapped to lower levels
+    // first find the features that were mapped to lower levels
     for (CCCoreLib::GeometricalAnalysisTools::MultiGeomCharacteristicRequest f: data->features)
     {
         QString sfName = GetFeatureSFName(f.c, f.subOption);
@@ -353,6 +346,14 @@ void NAG::deleteAllScalarFields(int level)
             }
         }
     }
+
+    // then delete the labels on the base level
+    int sfIdx = (*this)[0]->getScalarFieldIndexByName(QString("Level %1").arg(level).toStdString());
+    if (sfIdx >= 0)
+    {
+        (*this)[0]->deleteScalarField(sfIdx);
+    }
+
 
     // finally delete on the current level
     data->deleteAllScalarFields();
