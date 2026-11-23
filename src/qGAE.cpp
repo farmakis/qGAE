@@ -85,7 +85,7 @@ void qGAE::doAction()
 		//general
 		connect(m_dlg->closeButton, &QAbstractButton::clicked, m_dlg, &QDialog::close);
 		connect( m_dlg, &qGAEDialog::undoRequested, this, &qGAE::onUndo );
-		connect( m_dlg, &QDialog::finished, this, [this]() { m_dlg->saveParamsToPersistentSettings(); } );
+		connect( m_dlg, &QDialog::finished, m_dlg, &qGAEDialog::saveParamsToPersistentSettings );
 
 		// sub-dialogs
 		connect( m_dlg, &qGAEDialog::voxelRequested, this, &qGAE::onCreateVoxelGrid );
@@ -93,6 +93,10 @@ void qGAE::doAction()
 		connect( m_dlg, &qGAEDialog::runRequested,   this, &qGAE::onRunPartition );
 
 		// visualization
+		connect( m_dlg->activeLevelComboBox, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](int index)
+		{
+			setActiveLevel(index + 1);
+		} );
 		connect( m_dlg->rgbButton, &QPushButton::clicked, this, &qGAE::onSetRandomRGB );
 	}
 
@@ -114,6 +118,10 @@ void qGAE::onCreateVoxelGrid()
 
 	m_dlg->setEnabled( true );
 	m_dlg->setSessionActive( m_session.isActive() );
+
+	// the voxel level (0) is not listed in the combo box: levels are only added after a partition
+	// but it must be the active level so that features can be computed on it
+	m_session.activeLevel = 0;
 	updateFeatureLevelLimit();
 }
 
@@ -143,12 +151,14 @@ void qGAE::onRunPartition()
 
 	m_dlg->setEnabled( true );
 	m_dlg->setSessionActive( m_session.isActive() );
+	m_dlg->addLevel(m_session.nag.numLevels() - 1);
+	setActiveLevel(m_session.nag.numLevels() - 1);
 	updateFeatureLevelLimit();
 }
 
 void qGAE::onSetRandomRGB()
 {
-	int level = m_session.nag.numLevels() - 1;
+	int level = m_session.activeLevel;
 	if (level < 1)
 	{
 		m_app->dispToConsole("[GAE] There are no graph levels to visualize!", ccMainAppInterface::ERR_CONSOLE_MESSAGE);
@@ -160,6 +170,33 @@ void qGAE::onSetRandomRGB()
 
 	m_app->updateUI();
     m_app->refreshAll(); 
+}
+
+void qGAE::setActiveLevel(int level)
+{
+	if (level < 0 || level >= m_session.nag.numLevels())
+	{
+		m_app->dispToConsole(QString("[GAE] Invalid active level %1").arg(level), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+		return;
+	}
+
+	m_session.activeLevel = level;
+	m_dlg->activeLevelComboBox->setCurrentIndex(level - 1); // -1 because combo stars from Level 1 (voxel level is not listed)
+
+	auto levelName = m_dlg->activeLevelComboBox->currentText();
+	int sfIdx = m_session.nag[0]->getScalarFieldIndexByName(levelName.toStdString());
+	if (sfIdx < 0)
+	{
+		m_app->dispToConsole(QString("[GAE] Could not find scalar field for level %1").arg(level), ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+		return;
+	}
+	m_session.nag[0]->showColors(false);
+	m_session.nag[0]->showSF(true);
+	m_session.nag[0]->setCurrentDisplayedScalarField(sfIdx);
+
+	m_session.nag[0]->prepareDisplayForRefresh_recursive();
+	m_app->updateUI();
+	m_app->refreshAll();
 }
 
 void qGAE::onUndo()
@@ -214,6 +251,9 @@ void qGAE::popLastLevel()
 		m_dlg->rgbButton->setEnabled(false);
 		m_dlg->undoButton->setEnabled(false);
 	}
+
+	m_session.activeLevel = m_session.nag.numLevels() - 1;
+	m_dlg->activeLevelComboBox->removeItem(m_session.nag.numLevels() - 1);
 }
 
 void qGAE::updateFeatureLevelLimit()

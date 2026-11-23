@@ -53,6 +53,8 @@ private:
 	void onUndo();
 	void popLastLevel();
 	void updateFeatureLevelLimit();
+	//! Sets the active level (for visualization and processing)
+	void setActiveLevel(int level);
 
 	//! Default action
 	QAction* m_action;

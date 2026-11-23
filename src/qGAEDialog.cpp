@@ -124,6 +124,17 @@ void qGAEDialog::setSessionActive(bool active)
 	rgbButton->setEnabled(active);
 }
 
+void qGAEDialog::addLevel(int level)
+{
+	// level 0 (voxel grid) should not be listed
+	if (level < 1)
+	{
+		return;
+	}
+
+	activeLevelComboBox->addItem(QString("Level %1").arg(level), level);
+}
+
 void qGAEDialog::loadParamsFromPersistentSettings()
 {
 	QSettings settings("qGAE");

@@ -32,15 +32,16 @@ class ccMainAppInterface;
     nag[0] is always the voxel grid. **/
 struct qGAESession
 {
-	ccPointCloud* cloud   = nullptr; //!< original cloud
-	NAG           nag;               //!< levels (not owned)
-	unsigned      cloudId = 0;       //!< unique IDs, to detect deletion from the DB
+	ccPointCloud* cloud   = nullptr;  //!< original cloud
+	NAG           nag;                //!< levels (not owned)
+	unsigned      cloudId = 0;        //!< unique IDs, to detect deletion from the DB
 	unsigned      voxelId = 0;
-	unsigned      lastId  = 0;       //!< unique ID of the last level
+	unsigned      lastId  = 0;        //!< unique ID of the last level
 	int           featuresLevel = -1; //!< level for which features were computed (-1: none)
+	int 		  activeLevel = -1;   //!< level to which the operations are applied (-1: none)
 
 	bool isActive() const { return cloud && !nag.empty(); }
-	void reset() { cloud = nullptr; nag.clear(); cloudId = voxelId = lastId = 0; featuresLevel = -1; }
+	void reset() { cloud = nullptr; nag.clear(); cloudId = voxelId = lastId = 0; featuresLevel = -1; activeLevel = -1; }
 };
 
 //! GAE process

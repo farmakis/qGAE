@@ -186,8 +186,8 @@ bool qGAEProcess::ComputeFeatures(const qGAEDialog& dlg,
     QElapsedTimer featuresTimer;
     featuresTimer.start();
 
-    int level = session.nag.numLevels() - 1;
-    int projectLevel = 0;
+    int level = session.activeLevel;
+    int visualizationLevel = 0;
     if (dlg.getFeatureLevel() > level)
     {
         errorMessage = QString("Feature level must be at most %1").arg(level);
@@ -203,9 +203,9 @@ bool qGAEProcess::ComputeFeatures(const qGAEDialog& dlg,
         errorMessage = QString("Failed to compute segment features at level %1").arg(level);
         return false;
     }
-    if (!session.nag.mapFeaturesToLowerLevel(level, projectLevel, &pDlg))
+    if (!session.nag.mapFeaturesToLowerLevel(level, visualizationLevel, &pDlg))
     {
-        errorMessage = QString("Failed to map features from level %1 to level %2").arg(level).arg(projectLevel);
+        errorMessage = QString("Failed to map features from level %1 to level %2").arg(level).arg(visualizationLevel);
         return false;
     }
 
@@ -236,6 +236,9 @@ bool qGAEProcess::RunPartition(const qGAEDialog& dlg,
         return false;
     }
 
+    // get the level to partition
+    int level = session.activeLevel;
+
     // the levels live in the DB: make sure the user didn't delete them
     ccHObject* root = app->dbRootObject();
     if (!root || !root->find(session.cloudId) || !root->find(session.voxelId) || !root->find(session.lastId))
@@ -246,7 +249,7 @@ bool qGAEProcess::RunPartition(const qGAEDialog& dlg,
     }
     ccPointCloud* cloud = session.cloud;
 
-    if (session.featuresLevel != session.nag.numLevels() - 1)
+    if (session.featuresLevel != level)
     {
         errorMessage = "Features of the current level have not been computed yet";
         return false;
@@ -266,7 +269,6 @@ bool qGAEProcess::RunPartition(const qGAEDialog& dlg,
 
     auto cloudName = cloud->getName();
     
-    int level = session.nag.numLevels() - 1;
     PCP::Parameters params;
     params.regularization   = static_cast<float>(regularization);
     params.spatialWeight    = static_cast<float>(spatialWeight);

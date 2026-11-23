@@ -37,6 +37,27 @@
     <number>2</number>
    </property>
    <item>
+    <widget class="QLabel" name="activeLevelLabel">
+     <property name="text">
+      <string>Active level:</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QComboBox" name="activeLevelComboBox">
+     <property name="toolTip">
+      <string>Activate geaph level to process and extract information</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="Line" name="line_1">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QPushButton" name="voxelButton">
      <property name="toolTip">
       <string>Compute voxel graph graph at a specific resolution</string>
@@ -88,7 +109,7 @@
     </widget>
    </item>
    <item>
-    <widget class="Line" name="line_4">
+    <widget class="Line" name="line_2">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
      </property>
@@ -112,7 +133,7 @@
     </widget>
    </item>
    <item>
-    <widget class="Line" name="line_4">
+    <widget class="Line" name="line_3">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
      </property>

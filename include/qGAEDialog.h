@@ -58,6 +58,8 @@ public:
 	int getFeatureLevel() const;
 	//! Restricts the feature level (must be below the level being processed)
 	void setMaxFeatureLevel( int maxLevel );
+	//! Adds a level (>= 1) to the active level combo box
+	void addLevel(int level);
 
 	void loadParamsFromPersistentSettings();
 	void saveParamsToPersistentSettings();
