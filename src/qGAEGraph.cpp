@@ -186,8 +186,19 @@ bool NAG::computeLevelFeatures(int level, int subLevel/*=0*/, const ccProgressDi
     for (unsigned i = 0; i < superIndex.size(); ++i)
         clusters[cursor[superIndex[i]]++] = i;
 
+    CCCoreLib::GenericProgressCallback* progressCb = const_cast<ccProgressDialog*>(pDlg);
+    if (progressCb)
+    {
+        progressCb->update(0);
+        progressCb->start();
+    }
+
     for (unsigned rv = 0; rv < data->size(); ++rv)
     {
+        if (progressCb && (rv % 16 == 0))
+        {
+            progressCb->update(100.0f * static_cast<float>(rv) / static_cast<float>(data->size()));
+        }
         const CCVector3* queryPoint = data->getPoint(rv);
 
         // get segment points from the sub-level
