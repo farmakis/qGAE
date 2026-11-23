@@ -91,6 +91,9 @@ void qGAE::doAction()
 		connect( m_dlg, &qGAEDialog::voxelRequested, this, &qGAE::onCreateVoxelGrid );
 		connect( m_dlg, &qGAEDialog::featuresRequested, this, &qGAE::onComputeFeatures );
 		connect( m_dlg, &qGAEDialog::runRequested,   this, &qGAE::onRunPartition );
+
+		// visualization
+		connect( m_dlg->rgbButton, &QPushButton::clicked, this, &qGAE::onSetRandomRGB );
 	}
 
 	m_dlg->linkWith(m_app->getActiveGLWindow());
@@ -143,6 +146,22 @@ void qGAE::onRunPartition()
 	updateFeatureLevelLimit();
 }
 
+void qGAE::onSetRandomRGB()
+{
+	int level = m_session.nag.numLevels() - 1;
+	if (level < 1)
+	{
+		m_app->dispToConsole("[GAE] There are no graph levels to visualize!", ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+		return;
+	}
+
+	QString sfName = QString("Level %1").arg(level);
+	m_session.nag[0]->convertLabelsToRandomRGB(sfName.toStdString());
+
+	m_app->updateUI();
+    m_app->refreshAll(); 
+}
+
 void qGAE::onUndo()
 {
 	// only the 
@@ -157,7 +176,7 @@ bool qGAE::launch()
 	if (!m_app->getActiveGLWindow())
 	{
 		//invalid pointer error
-		m_app->dispToConsole("[GAE] Ccould not find the CloudCompare window. Abort!", ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+		m_app->dispToConsole("[GAE] Could not find the CloudCompare window. Abort!", ccMainAppInterface::ERR_CONSOLE_MESSAGE);
 		return false;
 	}
 

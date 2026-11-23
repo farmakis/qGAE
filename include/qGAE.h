@@ -49,6 +49,7 @@ private:
 	void onCreateVoxelGrid();
 	void onComputeFeatures();
 	void onRunPartition();
+	void onSetRandomRGB();
 	void onUndo();
 	void popLastLevel();
 	void updateFeatureLevelLimit();

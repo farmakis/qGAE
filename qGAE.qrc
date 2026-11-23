@@ -5,6 +5,7 @@
     <file>images/brgm.png</file>
     <file>images/voxel-grid.png</file>
     <file>images/features.png</file>
+    <file>images/paint.png</file>
     <file>images/partition.png</file>
     <file>info.json</file>
   </qresource>

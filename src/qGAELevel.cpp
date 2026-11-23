@@ -103,7 +103,60 @@ void Data::edgeListToForwardStar(int32_t* firstEdge, int32_t* target, int32_t* r
 	}
 }
 
-// bool Data::computeFeatures(GAT::MultiGeomCharacteristicRequestSet requests)
-// {
-//     std::string label = "Geometric characteristics computation";
-// }
+bool Data::convertLabelsToRandomRGB(const std::string& name)
+{
+	int sfIdx = getScalarFieldIndexByName(name);
+	if (sfIdx < 0)
+	{
+		ccLog::Error(QT_TR_NOOP("Level scalar field not found!"));
+		return false;
+	}
+	ccScalarField::Shared sf = getCCScalarField(sfIdx);
+
+	int randomColorsNumber = sf->getMax();
+	
+	RGBAColorsTableType randomColors;
+	if (!randomColors.reserveSafe(static_cast<unsigned>(randomColorsNumber)))
+	{
+		ccLog::Error(QT_TR_NOOP("Not enough memory!"));
+		return false;
+	}
+
+	// generate random colors
+	for (int i = 0; i < randomColorsNumber; ++i)
+	{
+		ccColor::Rgba col(ccColor::Generator::Random(), ccColor::MAX);
+		randomColors.addElement(col);
+	}
+
+	// if there is no such SF --> nothing to do!
+	if (sf && sf->currentSize() >= size())
+	{
+		if (!resizeTheRGBTable(false))
+		{
+			ccLog::Error(QT_TR_NOOP("Not enough memory!"));
+			return false;
+		}
+		ScalarType minSF = sf->getMin();
+		ScalarType maxSF = sf->getMax();
+
+		ScalarType step = (maxSF - minSF) / (randomColorsNumber - 1);
+		if (step == 0)
+			step = static_cast<ScalarType>(1.0);
+
+		for (unsigned i = 0; i < size(); ++i)
+		{
+			ScalarType val      = sf->getValue(i);
+			unsigned   colIndex = static_cast<unsigned>((val - minSF) / step);
+			if (colIndex == randomColorsNumber)
+				--colIndex;
+
+			setPointColor(i, randomColors.getValue(colIndex));
+		}
+
+		showColors(true);
+		showSF(false); // just in case
+
+		prepareDisplayForRefresh_recursive();
+	}
+}

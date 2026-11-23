@@ -80,6 +80,9 @@ class Data : public ccPointCloud
 		 * adj_vertices can be thus deduced from the edges by permuting the ending
 		 * vertices according to reindex */
 
+        //! Assigns random RGB to each label in the sf
+        bool convertLabelsToRandomRGB(const std::string& name);
+
     protected:
         bool m_valid = false;
         const ccPointCloud* m_subPtr = nullptr; //!< point cloud to hold the original points

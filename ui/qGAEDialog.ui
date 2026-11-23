@@ -95,6 +95,30 @@
     </widget>
    </item>
    <item>
+    <widget class="QPushButton" name="rgbButton">
+     <property name="toolTip">
+      <string>Assign random RGB values to the level segments</string>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>56</width>
+       <height>32</height>
+      </size>
+     </property>
+     <property name="icon">
+      <iconset resource="../qGAE.qrc">
+       <normaloff>:/CC/plugin/qGAE/images/paint.png</normaloff>:/CC/plugin/qGAE/images/paint.png</iconset>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="Line" name="line_4">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QToolButton" name="undoButton">
      <property name="minimumSize">
       <size>
