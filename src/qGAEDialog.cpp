@@ -121,6 +121,7 @@ void qGAEDialog::setSessionActive(bool active)
 	runButton->setEnabled(active);
 	featureButton->setEnabled(active);
 	undoButton->setEnabled(active);
+	rgbButton->setEnabled(active);
 }
 
 void qGAEDialog::loadParamsFromPersistentSettings()

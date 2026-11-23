@@ -76,7 +76,7 @@ bool NAG::setLevelFeatures(const GeomCharacteristicWithSubOptionSet& selectedFea
     }
 
     Data* data = (*this)[level];
-    deleteAllScalarFields(level); // clean existing scalar fields of that level first
+    deleteAllScalarFields(level, true); // clean existing feature fields of that level (keep the 'Level n' labels)
     data->features.reserve(selectedFeatures.size());
 
     for (const GeomCharacteristicWithSubOption& f : selectedFeatures)
@@ -322,14 +322,9 @@ bool NAG::mapFeaturesToLowerLevel(int high, int low, const ccProgressDialog* pDl
     return true;
 }
 
-void NAG::deleteAllScalarFields(int level)
+void NAG::deleteAllScalarFields(int level, bool keepLabels/*=false*/)
 {
     Data* data = (*this)[level];
-    // skip if there are no features to delete on that level
-    if (data->features.empty())
-    {
-        return;
-    }
 
     // first find the features that were mapped to lower levels
     for (CCCoreLib::GeometricalAnalysisTools::MultiGeomCharacteristicRequest f: data->features)
@@ -347,11 +342,14 @@ void NAG::deleteAllScalarFields(int level)
         }
     }
 
-    // then delete the labels on the base level
-    int sfIdx = (*this)[0]->getScalarFieldIndexByName(QString("Level %1").arg(level).toStdString());
-    if (sfIdx >= 0)
+    // then delete the labels on the base level (unless we only reset the features)
+    if (!keepLabels)
     {
-        (*this)[0]->deleteScalarField(sfIdx);
+        int sfIdx = (*this)[0]->getScalarFieldIndexByName(QString("Level %1").arg(level).toStdString());
+        if (sfIdx >= 0)
+        {
+            (*this)[0]->deleteScalarField(sfIdx);
+        }
     }
 
 

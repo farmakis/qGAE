@@ -207,6 +207,13 @@ void qGAE::popLastLevel()
 	// update session on the new last level
 	Data* newLast = m_session.nag.back();
 	m_session.lastId  = newLast ? newLast->getUniqueID() : 0;
+
+	if (m_session.nag.size() < 2)
+	{
+		m_dlg->runButton->setEnabled(false);
+		m_dlg->rgbButton->setEnabled(false);
+		m_dlg->undoButton->setEnabled(false);
+	}
 }
 
 void qGAE::updateFeatureLevelLimit()
